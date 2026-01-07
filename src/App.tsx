@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Upload from "./pages/Upload";
 import Browse from "./pages/Browse";
 import Video from "./pages/Video";
+import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/upload" element={<Upload />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/video/:id" element={<Video />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
