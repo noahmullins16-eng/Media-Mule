@@ -1,5 +1,5 @@
 import { Header } from "@/components/landing/Header";
-import { Upload, DollarSign, Download, Shield, CheckCircle, Gamepad2 } from "lucide-react";
+import { Upload, DollarSign, Download, Shield, CheckCircle, FileVideo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -11,8 +11,8 @@ const HowItWorks = () => {
         {/* Hero Section */}
         <div className="text-center mb-16 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">
-            <Gamepad2 className="w-4 h-4 text-accent" />
-            <span className="text-sm text-accent font-medium">The Ultimate Save Point</span>
+            <FileVideo className="w-4 h-4 text-accent" />
+            <span className="text-sm text-accent font-medium">The Last Stop</span>
           </div>
           
           <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
@@ -20,12 +20,12 @@ const HowItWorks = () => {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-4">
-            Think of us as the last save file before your client gets the final boss — your premium video content. 
-            No more "I lost the file" or "can you send it again?" disasters.
+            This is the last destination for your video before it lands in your client's hands. 
+            No more back-and-forth, no more revisions — just secure delivery after payment.
           </p>
           
           <p className="text-lg text-muted-foreground/80 italic">
-            🎮 Because nobody wants to replay the entire project from the beginning, right?
+            📁 Because we all know there's no such thing as "Project_Final_v2_REALLY_FINAL_thisOne_v4.mp4" — this is actually the final save.
           </p>
         </div>
 
@@ -74,9 +74,9 @@ const HowItWorks = () => {
               description="Your work has value. Final Save ensures you're compensated before delivery."
             />
             <FeatureItem
-              icon={<Gamepad2 className="w-5 h-5" />}
+              icon={<FileVideo className="w-5 h-5" />}
               title="The Last Save Point"
-              description="Like that crucial save before the final boss — except the boss is your client's happiness. 😉"
+              description="No more 'final_v3_FINAL_updated.mp4' — when it's here, it's done. For real this time."
             />
           </div>
         </div>
