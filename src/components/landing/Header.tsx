@@ -12,7 +12,7 @@ export const Header = () => {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-secondary flex items-center justify-center shadow-lg shadow-accent/25 group-hover:shadow-accent/40 transition-shadow">
               <Video className="w-5 h-5 text-accent-foreground" />
             </div>
-            <span className="font-display text-xl font-bold">VidPay</span>
+            <span className="font-display text-xl font-bold">Final Save</span>
           </Link>
 
           {/* Navigation */}
