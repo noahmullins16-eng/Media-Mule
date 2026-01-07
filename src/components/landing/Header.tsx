@@ -17,9 +17,6 @@ export const Header = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link to="/browse" className="text-muted-foreground hover:text-foreground transition-colors">
-              Browse
-            </Link>
             <Link to="/upload" className="text-muted-foreground hover:text-foreground transition-colors">
               Upload
             </Link>
