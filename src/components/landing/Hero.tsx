@@ -44,7 +44,7 @@ export const Hero = () => {
             <Link to="/browse">
               <Button variant="heroOutline" size="xl" className="gap-3">
                 <Play className="w-5 h-5" />
-                Browse Videos
+                My Videos
               </Button>
             </Link>
           </div>
