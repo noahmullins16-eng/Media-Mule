@@ -11,11 +11,13 @@ export const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <img 
-              src={logo} 
-              alt="Media Mule Co. Logo" 
-              className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-accent/25 group-hover:shadow-accent/40 transition-shadow"
-            />
+            <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/25 group-hover:shadow-orange-500/40 transition-shadow">
+              <img 
+                src={logo} 
+                alt="Media Mule Co. Logo" 
+                className="w-7 h-7 object-contain"
+              />
+            </div>
             <span className="font-display text-xl font-bold">Media Mule Co.</span>
           </Link>
 
