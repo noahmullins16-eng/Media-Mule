@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Video } from "lucide-react";
 import { Link } from "react-router-dom";
+
+// Import your logo here - replace with your uploaded image
+import logo from "@/assets/logo.png";
 
 export const Header = () => {
   return (
@@ -9,9 +11,11 @@ export const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-secondary flex items-center justify-center shadow-lg shadow-accent/25 group-hover:shadow-accent/40 transition-shadow">
-              <Video className="w-5 h-5 text-accent-foreground" />
-            </div>
+            <img 
+              src={logo} 
+              alt="Media Mule Co. Logo" 
+              className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-accent/25 group-hover:shadow-accent/40 transition-shadow"
+            />
             <span className="font-display text-xl font-bold">Media Mule Co.</span>
           </Link>
 
