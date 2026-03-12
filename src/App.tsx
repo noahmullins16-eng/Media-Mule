@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Upload from "./pages/Upload";
 import Auth from "./pages/Auth";
 import MyVideos from "./pages/MyVideos";
+import Dashboard from "./pages/Dashboard";
+import Pricing from "./pages/Pricing";
 import Video from "./pages/Video";
 import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
