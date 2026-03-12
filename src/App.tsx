@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Upload from "./pages/Upload";
 import Auth from "./pages/Auth";
 import MyVideos from "./pages/MyVideos";
+import Dashboard from "./pages/Dashboard";
+import Pricing from "./pages/Pricing";
 import Video from "./pages/Video";
 import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
@@ -25,6 +27,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/my-videos" element={<MyVideos />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/video/:id" element={<Video />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
