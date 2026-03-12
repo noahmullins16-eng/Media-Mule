@@ -26,16 +26,21 @@ export const Header = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link to="/upload" className="text-muted-foreground hover:text-foreground transition-colors">
-              Upload
+            <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
+              Pricing
             </Link>
             <Link to="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
               How It Works
             </Link>
             {user && (
-              <Link to="/my-videos" className="text-muted-foreground hover:text-foreground transition-colors">
-                My Videos
-              </Link>
+              <>
+                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Dashboard
+                </Link>
+                <Link to="/my-videos" className="text-muted-foreground hover:text-foreground transition-colors">
+                  My Media
+                </Link>
+              </>
             )}
           </nav>
 
