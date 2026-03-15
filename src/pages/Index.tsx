@@ -131,7 +131,13 @@ const Index = () => {
       <section className="relative z-10 pb-32">
         <div className="container px-4">
           <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-6 animate-fade-up" style={{ animationDelay: "0.5s" }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6 }}
+              className="grid md:grid-cols-3 gap-6"
+            >
               <FeatureCard
                 icon={<Upload className="w-6 h-6" />}
                 title="Drag & Drop Upload"
@@ -147,9 +153,15 @@ const Index = () => {
                 title="Secure Downloads"
                 description="Paywalled content with instant delivery after verified payment."
               />
-            </div>
+            </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-6 mt-6 animate-fade-up" style={{ animationDelay: "0.6s" }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="grid md:grid-cols-3 gap-6 mt-6"
+            >
               <FeatureCard
                 icon={<Zap className="w-6 h-6" />}
                 title="Lightning Fast"
@@ -165,7 +177,7 @@ const Index = () => {
                 title="Preview Support"
                 description="Show buyers a preview before they purchase your content."
               />
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
