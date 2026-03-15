@@ -13,6 +13,8 @@ import {
   Shield,
   TrendingUp,
   BarChart3,
+  Eye,
+  Globe,
 } from "lucide-react";
 
 interface AdminAnalytics {
@@ -29,11 +31,21 @@ interface AdminAnalytics {
   }[] | null;
 }
 
+interface VisitorStats {
+  uniqueToday: number;
+  uniqueWeek: number;
+  uniqueMonth: number;
+  uniqueAllTime: number;
+  totalPageviews: number;
+  topPages: { path: string; views: number }[];
+}
+
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -56,6 +68,44 @@ const AdminDashboard = () => {
       if (!error && data) {
         setAnalytics(data as unknown as AdminAnalytics);
       }
+
+      // Fetch visitor stats
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const startOfMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [todayRes, weekRes, monthRes, allRes, pageviewsRes, topPagesRes] = await Promise.all([
+        supabase.from("site_visits").select("visitor_id").gte("visited_at", startOfDay),
+        supabase.from("site_visits").select("visitor_id").gte("visited_at", startOfWeek),
+        supabase.from("site_visits").select("visitor_id").gte("visited_at", startOfMonth),
+        supabase.from("site_visits").select("visitor_id"),
+        supabase.from("site_visits").select("id", { count: "exact", head: true }),
+        supabase.from("site_visits").select("page_path"),
+      ]);
+
+      const uniqueCount = (rows: { visitor_id: string }[] | null) =>
+        new Set(rows?.map((r) => r.visitor_id) || []).size;
+
+      // Count top pages
+      const pageCounts: Record<string, number> = {};
+      topPagesRes.data?.forEach((r) => {
+        pageCounts[r.page_path] = (pageCounts[r.page_path] || 0) + 1;
+      });
+      const topPages = Object.entries(pageCounts)
+        .map(([path, views]) => ({ path, views }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 5);
+
+      setVisitorStats({
+        uniqueToday: uniqueCount(todayRes.data),
+        uniqueWeek: uniqueCount(weekRes.data),
+        uniqueMonth: uniqueCount(monthRes.data),
+        uniqueAllTime: uniqueCount(allRes.data),
+        totalPageviews: pageviewsRes.count || 0,
+        topPages,
+      });
+
       setLoadingData(false);
     };
 
@@ -121,6 +171,72 @@ const AdminDashboard = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Visitor Analytics */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <div className="glass-card p-6">
+            <h2 className="font-display font-semibold text-lg flex items-center gap-2 mb-4">
+              <Globe className="w-5 h-5 text-accent" />
+              Unique Visitors
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl bg-muted/50">
+                <p className="text-sm text-muted-foreground">Today</p>
+                <p className="font-display text-2xl font-bold">{visitorStats?.uniqueToday || 0}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50">
+                <p className="text-sm text-muted-foreground">Last 7 Days</p>
+                <p className="font-display text-2xl font-bold">{visitorStats?.uniqueWeek || 0}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50">
+                <p className="text-sm text-muted-foreground">Last 30 Days</p>
+                <p className="font-display text-2xl font-bold">{visitorStats?.uniqueMonth || 0}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50">
+                <p className="text-sm text-muted-foreground">All Time</p>
+                <p className="font-display text-2xl font-bold">{visitorStats?.uniqueAllTime || 0}</p>
+              </div>
+            </div>
+            <div className="mt-4 p-3 rounded-xl bg-muted/50 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                <Eye className="w-4 h-4" /> Total Pageviews
+              </span>
+              <span className="font-display font-bold text-lg">{visitorStats?.totalPageviews || 0}</span>
+            </div>
+          </div>
+
+          {/* Top Pages */}
+          <div className="glass-card p-6">
+            <h2 className="font-display font-semibold text-lg flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-accent" />
+              Top Pages
+            </h2>
+            {visitorStats?.topPages && visitorStats.topPages.length > 0 ? (
+              <div className="space-y-3">
+                {visitorStats.topPages.map((page) => {
+                  const maxViews = visitorStats.topPages[0]?.views || 1;
+                  const percent = (page.views / maxViews) * 100;
+                  return (
+                    <div key={page.path}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="font-mono text-xs">{page.path}</span>
+                        <span className="text-muted-foreground">{page.views} views</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-accent to-accent-secondary transition-all"
+                          style={{ width: `${Math.max(percent, 2)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">No page data yet.</p>
+            )}
+          </div>
         </div>
 
         {/* Tier Distribution & Revenue */}
