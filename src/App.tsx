@@ -13,6 +13,7 @@ import Pricing from "./pages/Pricing";
 import Video from "./pages/Video";
 import HowItWorks from "./pages/HowItWorks";
 import ResetPassword from "./pages/ResetPassword";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
