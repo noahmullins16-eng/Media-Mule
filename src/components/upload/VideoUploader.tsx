@@ -42,15 +42,9 @@ export const VideoUploader = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title || !price) return;
-
-    setIsUploading(true);
-    // Simulate upload
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsUploading(false);
-    setUploadComplete(true);
+    // Upload integration coming soon - do not process mock uploads
   };
 
   const removeFile = () => {
