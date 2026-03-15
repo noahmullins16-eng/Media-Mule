@@ -128,14 +128,13 @@ export const VideoPaywall = ({
                   variant="premium"
                   size="lg"
                   className="w-full gap-2"
-                  onClick={handlePurchase}
-                  disabled={isPurchasing}
+                  disabled
                 >
                   <CreditCard className="w-5 h-5" />
-                  Buy Now
+                  Coming Soon
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">
-                  Secure payment powered by Stripe
+                  Payment integration coming soon
                 </p>
               </div>
             )}
