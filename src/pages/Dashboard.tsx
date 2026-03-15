@@ -68,9 +68,10 @@ const Dashboard = () => {
     { label: "Active Links", value: "0", icon: Link2, change: null },
   ];
 
-  const storageUsed = 0;
-  const storageTotal = 1024; // 1 TB in GB for Starter
-  const storagePercent = (storageUsed / storageTotal) * 100;
+  const tierConfig = TIER_CONFIG[tier];
+  const storageUsedGB = storageUsed / (1024 * 1024 * 1024); // Convert bytes to GB
+  const storageTotalGB = tierConfig.totalStorage / (1024 * 1024 * 1024); // Convert bytes to GB
+  const storagePercent = (storageUsed / tierConfig.totalStorage) * 100;
 
   return (
     <div className="min-h-screen bg-background">
