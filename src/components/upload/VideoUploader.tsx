@@ -1,16 +1,24 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { Upload, Video, DollarSign, X, Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export const VideoUploader = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -32,6 +40,8 @@ export const VideoUploader = () => {
       const droppedFile = e.dataTransfer.files[0];
       if (droppedFile.type.startsWith("video/")) {
         setFile(droppedFile);
+      } else {
+        toast.error("Please upload a video file");
       }
     }
   }, []);
@@ -42,9 +52,69 @@ export const VideoUploader = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Upload integration coming soon - do not process mock uploads
+
+    if (!user) {
+      toast.error("Please sign in to upload videos");
+      navigate("/auth");
+      return;
+    }
+
+    if (!file || !title || !price) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const priceNum = parseFloat(price);
+    if (isNaN(priceNum) || priceNum < 0.99) {
+      toast.error("Price must be at least $0.99");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(10);
+
+    try {
+      // Upload file to storage
+      const fileExt = file.name.split(".").pop();
+      const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+
+      setUploadProgress(20);
+
+      const { error: uploadError } = await supabase.storage
+        .from("videos")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      setUploadProgress(70);
+
+      // Save metadata to database
+      const { error: dbError } = await supabase.from("videos").insert({
+        user_id: user.id,
+        title,
+        description: description || null,
+        price: priceNum,
+        file_path: filePath,
+        file_size: file.size,
+        status: "published",
+      });
+
+      if (dbError) throw dbError;
+
+      setUploadProgress(100);
+      setUploadComplete(true);
+      toast.success("Video uploaded successfully!");
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      toast.error(err.message || "Failed to upload video");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const removeFile = () => {
@@ -69,10 +139,11 @@ export const VideoUploader = () => {
             setDescription("");
             setPrice("");
             setUploadComplete(false);
+            setUploadProgress(0);
           }}>
             Upload Another
           </Button>
-          <Button variant="heroOutline">
+          <Button variant="heroOutline" onClick={() => navigate("/my-videos")}>
             View Your Videos
           </Button>
         </div>
@@ -115,6 +186,7 @@ export const VideoUploader = () => {
               size="icon"
               onClick={removeFile}
               className="shrink-0"
+              disabled={isUploading}
             >
               <X className="w-5 h-5" />
             </Button>
@@ -137,19 +209,33 @@ export const VideoUploader = () => {
                 <span>Browse Files</span>
               </Button>
             </label>
+            <p className="text-xs text-muted-foreground mt-3">Max file size: 500 MB</p>
           </div>
         )}
       </div>
 
+      {/* Upload Progress */}
+      {isUploading && (
+        <div className="mb-6 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Uploading...</span>
+            <span className="text-muted-foreground">{uploadProgress}%</span>
+          </div>
+          <Progress value={uploadProgress} className="h-2" />
+        </div>
+      )}
+
       {/* Video Details */}
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Video Title</label>
+          <label className="block text-sm font-medium mb-2">Video Title *</label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter a catchy title for your video"
             className="bg-background/50"
+            disabled={isUploading}
+            required
           />
         </div>
 
@@ -160,11 +246,12 @@ export const VideoUploader = () => {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Tell viewers what they'll get..."
             className="bg-background/50 min-h-[100px]"
+            disabled={isUploading}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Price (USD)</label>
+          <label className="block text-sm font-medium mb-2">Price (USD) *</label>
           <div className="relative">
             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
@@ -175,6 +262,8 @@ export const VideoUploader = () => {
               onChange={(e) => setPrice(e.target.value)}
               placeholder="9.99"
               className="bg-background/50 pl-10"
+              disabled={isUploading}
+              required
             />
           </div>
         </div>
@@ -186,14 +275,17 @@ export const VideoUploader = () => {
         variant="premium"
         size="xl"
         className="w-full mt-8"
-        disabled
+        disabled={isUploading || !file || !title || !price}
       >
         <Upload className="w-5 h-5" />
-        Upload Coming Soon
+        {isUploading ? "Uploading..." : "Upload Video"}
       </Button>
-      <p className="text-center text-sm text-muted-foreground mt-2">
-        File upload will be available once storage is configured.
-      </p>
+
+      {!user && (
+        <p className="text-center text-sm text-muted-foreground mt-2">
+          You must be signed in to upload videos.
+        </p>
+      )}
     </form>
   );
 };
