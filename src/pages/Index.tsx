@@ -185,7 +185,13 @@ const Index = () => {
       {/* CTA Banner */}
       <section className="relative z-10 pb-20">
         <div className="container px-4">
-          <div className="max-w-4xl mx-auto glass-card p-12 md:p-16 text-center glow-effect">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="max-w-4xl mx-auto glass-card p-12 md:p-16 text-center glow-effect"
+          >
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
               Ready to monetize your content?
             </h2>
@@ -198,7 +204,7 @@ const Index = () => {
                 Get Started Free
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
