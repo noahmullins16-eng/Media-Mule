@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import {
   Upload,
   Video,
@@ -20,12 +22,33 @@ import {
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [tier, setTier] = useState<SubscriptionTier>("starter");
+  const [storageUsed, setStorageUsed] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("creator_profiles")
+        .select("tier, storage_used")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (data) {
+        setTier(data.tier as SubscriptionTier);
+        setStorageUsed(data.storage_used);
+      }
+    };
+    
+    fetchProfile();
+  }, [user]);
 
   if (loading) {
     return (
@@ -45,9 +68,10 @@ const Dashboard = () => {
     { label: "Active Links", value: "0", icon: Link2, change: null },
   ];
 
-  const storageUsed = 0;
-  const storageTotal = 1024; // 1 TB in GB for Starter
-  const storagePercent = (storageUsed / storageTotal) * 100;
+  const tierConfig = TIER_CONFIG[tier];
+  const storageUsedGB = storageUsed / (1024 * 1024 * 1024); // Convert bytes to GB
+  const storageTotalGB = tierConfig.totalStorage / (1024 * 1024 * 1024); // Convert bytes to GB
+  const storagePercent = (storageUsed / tierConfig.totalStorage) * 100;
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,9 +102,11 @@ const Dashboard = () => {
               <Crown className="w-5 h-5 text-accent" />
             </div>
             <div>
-              <p className="font-display font-semibold">Free Plan</p>
+              <p className="font-display font-semibold">{tierConfig.label} Plan</p>
               <p className="text-sm text-muted-foreground">
-                Upgrade to unlock more storage, analytics, and distribution tools
+                {tier === "enterprise" 
+                  ? "You're on the highest tier with unlimited features" 
+                  : "Upgrade to unlock more storage, analytics, and distribution tools"}
               </p>
             </div>
           </div>
@@ -123,7 +149,7 @@ const Dashboard = () => {
                 Storage Usage
               </h2>
               <span className="text-sm text-muted-foreground">
-                {storageUsed} GB / {storageTotal >= 1024 ? `${storageTotal / 1024} TB` : `${storageTotal} GB`}
+                {storageUsedGB.toFixed(2)} GB / {tierConfig.totalStorageLabel}
               </span>
             </div>
             <div className="w-full h-3 rounded-full bg-muted overflow-hidden mb-3">
