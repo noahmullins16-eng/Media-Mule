@@ -209,7 +209,7 @@ export const VideoUploader = () => {
                 <span>Browse Files</span>
               </Button>
             </label>
-            <p className="text-xs text-muted-foreground mt-3">Max file size: 500 MB</p>
+            <p className="text-xs text-muted-foreground mt-3">Max file size: 5 GB</p>
           </div>
         )}
       </div>
