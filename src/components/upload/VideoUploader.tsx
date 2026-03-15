@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Upload, Video, DollarSign, X, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 
 export const VideoUploader = () => {
   const { user } = useAuth();
@@ -20,6 +21,34 @@ export const VideoUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [tier, setTier] = useState<SubscriptionTier>("starter");
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchTier = async () => {
+      const { data } = await supabase
+        .from("creator_profiles")
+        .select("tier")
+        .eq("user_id", user.id)
+        .single();
+      if (data?.tier) {
+        setTier(data.tier as SubscriptionTier);
+      }
+    };
+    fetchTier();
+  }, [user]);
+
+  const tierConfig = TIER_CONFIG[tier];
+
+  const validateFileSize = (f: File): boolean => {
+    if (f.size > tierConfig.maxFileSize) {
+      toast.error(
+        `File exceeds your ${tierConfig.label} plan limit of ${tierConfig.maxFileSizeLabel}. Upgrade your plan for larger uploads.`
+      );
+      return false;
+    }
+    return true;
+  };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -38,17 +67,24 @@ export const VideoUploader = () => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.type.startsWith("video/")) {
-        setFile(droppedFile);
-      } else {
+      if (!droppedFile.type.startsWith("video/")) {
         toast.error("Please upload a video file");
+        return;
+      }
+      if (validateFileSize(droppedFile)) {
+        setFile(droppedFile);
       }
     }
-  }, []);
+  }, [tierConfig]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      if (validateFileSize(selectedFile)) {
+        setFile(selectedFile);
+      } else {
+        e.target.value = "";
+      }
     }
   };
 
@@ -66,6 +102,9 @@ export const VideoUploader = () => {
       return;
     }
 
+    // Re-validate file size before upload
+    if (!validateFileSize(file)) return;
+
     const priceNum = parseFloat(price);
     if (isNaN(priceNum) || priceNum < 0.99) {
       toast.error("Price must be at least $0.99");
@@ -76,7 +115,6 @@ export const VideoUploader = () => {
     setUploadProgress(10);
 
     try {
-      // Upload file to storage
       const fileExt = file.name.split(".").pop();
       const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
 
@@ -93,7 +131,6 @@ export const VideoUploader = () => {
 
       setUploadProgress(70);
 
-      // Save metadata to database
       const { error: dbError } = await supabase.from("videos").insert({
         user_id: user.id,
         title,
@@ -209,7 +246,12 @@ export const VideoUploader = () => {
                 <span>Browse Files</span>
               </Button>
             </label>
-            <p className="text-xs text-muted-foreground mt-3">Max file size: 5 GB</p>
+            <p className="text-xs text-muted-foreground mt-3">
+              Max file size: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
+              {tier !== "enterprise" && (
+                <> · <Link to="/pricing" className="text-accent hover:underline">Upgrade for more</Link></>
+              )}
+            </p>
           </div>
         )}
       </div>
