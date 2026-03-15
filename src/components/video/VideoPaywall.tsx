@@ -22,12 +22,8 @@ export const VideoPaywall = ({
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isPurchased, setIsPurchased] = useState(false);
 
-  const handlePurchase = async () => {
-    setIsPurchasing(true);
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsPurchasing(false);
-    setIsPurchased(true);
+  const handlePurchase = () => {
+    // Payment integration coming soon - do not process mock purchases
   };
 
   return (
