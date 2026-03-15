@@ -22,12 +22,33 @@ import {
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [tier, setTier] = useState<SubscriptionTier>("starter");
+  const [storageUsed, setStorageUsed] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("creator_profiles")
+        .select("tier, storage_used")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (data) {
+        setTier(data.tier as SubscriptionTier);
+        setStorageUsed(data.storage_used);
+      }
+    };
+    
+    fetchProfile();
+  }, [user]);
 
   if (loading) {
     return (
