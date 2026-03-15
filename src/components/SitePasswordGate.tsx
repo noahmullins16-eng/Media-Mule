@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Lock } from "lucide-react";
 import logo from "@/assets/logo.png";
 
-const SITE_PASSWORD = "mediamule2026";
+const SITE_PASSWORD = "boner69";
 const STORAGE_KEY = "site-access-granted";
 
 export const SitePasswordGate = ({ children }: { children: React.ReactNode }) => {
