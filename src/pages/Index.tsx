@@ -10,12 +10,42 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
-      {/* Floating background effects */}
+      {/* Floating background effects with parallax */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] hero-glow opacity-60" />
-        <div className="absolute top-[20%] left-[10%] w-72 h-72 bg-accent/8 rounded-full blur-3xl animate-pulse-glow" />
-        <div className="absolute top-[40%] right-[5%] w-96 h-96 bg-accent-secondary/6 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
-        <div className="absolute bottom-[10%] left-[30%] w-64 h-64 bg-accent/5 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "3s" }} />
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.6 }}
+          transition={{ duration: 1 }}
+          style={{ y: 0 }}
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] hero-glow"
+        />
+        <motion.div 
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2 }}
+          whileInView={{ y: [0, -30, 0] }}
+          viewport={{ once: false }}
+          style={{ y: 0 }}
+          className="absolute top-[20%] left-[10%] w-72 h-72 bg-accent/8 rounded-full blur-3xl animate-pulse-glow"
+        />
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.4, delay: 0.2 }}
+          whileInView={{ y: [0, 40, 0] }}
+          viewport={{ once: false }}
+          className="absolute top-[40%] right-[5%] w-96 h-96 bg-accent-secondary/6 rounded-full blur-3xl animate-pulse-glow" 
+          style={{ animationDelay: "1.5s" }}
+        />
+        <motion.div 
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1.6, delay: 0.4 }}
+          whileInView={{ y: [0, -20, 0], x: [0, 20, 0] }}
+          viewport={{ once: false }}
+          className="absolute bottom-[10%] left-[30%] w-64 h-64 bg-accent/5 rounded-full blur-3xl animate-pulse-glow" 
+          style={{ animationDelay: "3s" }}
+        />
       </div>
 
       {/* Nav bar */}
