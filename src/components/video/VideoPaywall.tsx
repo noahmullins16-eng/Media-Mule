@@ -56,14 +56,11 @@ export const VideoPaywall = ({
                 <Button
                   variant="premium"
                   size="xl"
-                  onClick={handlePurchase}
-                  disabled={isPurchasing}
+                  disabled
                   className="gap-3"
                 >
-                  <>
-                    <CreditCard className="w-5 h-5" />
-                    Coming Soon
-                  
+                  <CreditCard className="w-5 h-5" />
+                  Coming Soon
                 </Button>
               </div>
             </>
