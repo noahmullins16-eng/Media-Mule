@@ -3,6 +3,7 @@ import { Upload, Play, DollarSign, Shield, Zap, TrendingUp } from "lucide-react"
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo.png";
+import { motion } from "framer-motion";
 
 const Index = () => {
   const { user, signOut } = useAuth();
