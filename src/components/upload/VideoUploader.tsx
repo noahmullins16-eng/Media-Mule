@@ -42,15 +42,9 @@ export const VideoUploader = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title || !price) return;
-
-    setIsUploading(true);
-    // Simulate upload
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsUploading(false);
-    setUploadComplete(true);
+    // Upload integration coming soon - do not process mock uploads
   };
 
   const removeFile = () => {
@@ -192,20 +186,14 @@ export const VideoUploader = () => {
         variant="premium"
         size="xl"
         className="w-full mt-8"
-        disabled={!file || !title || !price || isUploading}
+        disabled
       >
-        {isUploading ? (
-          <>
-            <span className="animate-spin mr-2">⏳</span>
-            Uploading...
-          </>
-        ) : (
-          <>
-            <Upload className="w-5 h-5" />
-            Publish Video
-          </>
-        )}
+        <Upload className="w-5 h-5" />
+        Upload Coming Soon
       </Button>
+      <p className="text-center text-sm text-muted-foreground mt-2">
+        File upload will be available once storage is configured.
+      </p>
     </form>
   );
 };

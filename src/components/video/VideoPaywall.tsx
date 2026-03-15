@@ -22,12 +22,8 @@ export const VideoPaywall = ({
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isPurchased, setIsPurchased] = useState(false);
 
-  const handlePurchase = async () => {
-    setIsPurchasing(true);
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsPurchasing(false);
-    setIsPurchased(true);
+  const handlePurchase = () => {
+    // Payment integration coming soon - do not process mock purchases
   };
 
   return (
@@ -60,21 +56,11 @@ export const VideoPaywall = ({
                 <Button
                   variant="premium"
                   size="xl"
-                  onClick={handlePurchase}
-                  disabled={isPurchasing}
+                  disabled
                   className="gap-3"
                 >
-                  {isPurchasing ? (
-                    <>
-                      <span className="animate-spin">⏳</span>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-5 h-5" />
-                      Pay ${price.toFixed(2)} to Download
-                    </>
-                  )}
+                  <CreditCard className="w-5 h-5" />
+                  Coming Soon
                 </Button>
               </div>
             </>
@@ -139,14 +125,13 @@ export const VideoPaywall = ({
                   variant="premium"
                   size="lg"
                   className="w-full gap-2"
-                  onClick={handlePurchase}
-                  disabled={isPurchasing}
+                  disabled
                 >
                   <CreditCard className="w-5 h-5" />
-                  Buy Now
+                  Coming Soon
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">
-                  Secure payment powered by Stripe
+                  Payment integration coming soon
                 </p>
               </div>
             )}
