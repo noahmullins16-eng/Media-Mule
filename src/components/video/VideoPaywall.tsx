@@ -60,17 +60,10 @@ export const VideoPaywall = ({
                   disabled={isPurchasing}
                   className="gap-3"
                 >
-                  {isPurchasing ? (
-                    <>
-                      <span className="animate-spin">⏳</span>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-5 h-5" />
-                      Pay ${price.toFixed(2)} to Download
-                    </>
-                  )}
+                  <>
+                    <CreditCard className="w-5 h-5" />
+                    Coming Soon
+                  
                 </Button>
               </div>
             </>
