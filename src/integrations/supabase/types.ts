@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      creator_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          storage_used: number
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          storage_used?: number
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          storage_used?: number
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           created_at: string
@@ -64,7 +91,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      subscription_tier: "starter" | "pro" | "studio" | "enterprise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -191,6 +218,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      subscription_tier: ["starter", "pro", "studio", "enterprise"],
+    },
   },
 } as const
