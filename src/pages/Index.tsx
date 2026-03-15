@@ -57,25 +57,45 @@ const Index = () => {
       <section className="relative z-10 flex items-center justify-center min-h-[85vh] pt-8">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-8 animate-fade-up">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-8"
+            >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
               </span>
               <span className="text-sm text-accent font-medium">The Creator's Distribution Platform</span>
-            </div>
+            </motion.div>
 
-            <h1 className="font-display text-5xl sm:text-6xl md:text-8xl font-bold leading-[0.95] mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="font-display text-5xl sm:text-6xl md:text-8xl font-bold leading-[0.95] mb-6"
+            >
               Your Content.
               <br />
               <span className="gradient-text">Your Revenue.</span>
-            </h1>
+            </motion.h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "0.2s" }}>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto"
+            >
               Upload premium video content, set your price, and let your audience pay to download — all in one seamless platform built for creators.
-            </p>
+            </motion.p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
+            >
               <Link to={user ? "/upload" : "/auth"}>
                 <Button variant="hero" size="xl" className="gap-3 min-w-[220px]">
                   <Upload className="w-5 h-5" />
@@ -88,16 +108,21 @@ const Index = () => {
                   See How It Works
                 </Button>
               </Link>
-            </div>
+            </motion.div>
 
             {/* Stats row */}
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 mb-20 animate-fade-up" style={{ animationDelay: "0.4s" }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex flex-wrap items-center justify-center gap-8 md:gap-16 mb-20"
+            >
               <StatItem value="Simple" label="Upload & Sell" />
               <div className="w-px h-8 bg-border hidden md:block" />
               <StatItem value="Secure" label="Payment Processing" />
               <div className="w-px h-8 bg-border hidden md:block" />
               <StatItem value="Instant" label="Digital Delivery" />
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
