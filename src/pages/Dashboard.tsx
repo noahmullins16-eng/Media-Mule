@@ -102,9 +102,11 @@ const Dashboard = () => {
               <Crown className="w-5 h-5 text-accent" />
             </div>
             <div>
-              <p className="font-display font-semibold">Free Plan</p>
+              <p className="font-display font-semibold">{tierConfig.label} Plan</p>
               <p className="text-sm text-muted-foreground">
-                Upgrade to unlock more storage, analytics, and distribution tools
+                {tier === "enterprise" 
+                  ? "You're on the highest tier with unlimited features" 
+                  : "Upgrade to unlock more storage, analytics, and distribution tools"}
               </p>
             </div>
           </div>
