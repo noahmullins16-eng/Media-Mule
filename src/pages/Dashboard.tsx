@@ -149,7 +149,7 @@ const Dashboard = () => {
                 Storage Usage
               </h2>
               <span className="text-sm text-muted-foreground">
-                {storageUsed} GB / {storageTotal >= 1024 ? `${storageTotal / 1024} TB` : `${storageTotal} GB`}
+                {storageUsedGB.toFixed(2)} GB / {tierConfig.totalStorageLabel}
               </span>
             </div>
             <div className="w-full h-3 rounded-full bg-muted overflow-hidden mb-3">
