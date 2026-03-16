@@ -57,6 +57,7 @@ const Video = () => {
         duration: data.status === "published" ? "Available now" : "Processing",
         creator: "Media Mule Creator",
         videoUrl,
+        watermarksEnabled: data.watermarks_enabled !== false,
       });
       setLoading(false);
     };
