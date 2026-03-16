@@ -3,9 +3,11 @@ import { useParams } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Video = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [video, setVideo] = useState<{
     title: string;
     description: string;
@@ -15,6 +17,7 @@ const Video = () => {
     creator: string;
     videoUrl: string;
     watermarksEnabled: boolean;
+    userId: string;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +30,7 @@ const Video = () => {
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled")
+        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id")
         .eq("id", id)
         .maybeSingle();
 
@@ -38,7 +41,6 @@ const Video = () => {
         return;
       }
 
-      // Get a signed URL for preview playback
       let videoUrl = "";
       if (data.file_path) {
         const { data: signedData } = await supabase.storage
@@ -58,12 +60,26 @@ const Video = () => {
         creator: "Media Mule Creator",
         videoUrl,
         watermarksEnabled: data.watermarks_enabled !== false,
+        userId: data.user_id,
       });
       setLoading(false);
     };
 
     fetchVideo();
   }, [id]);
+
+  const handleToggleWatermark = async (newValue: boolean) => {
+    if (!id) return;
+    const { error } = await supabase
+      .from("videos")
+      .update({ watermarks_enabled: newValue })
+      .eq("id", id);
+    if (!error && video) {
+      setVideo({ ...video, watermarksEnabled: newValue });
+    }
+  };
+
+  const isOwner = !!(user && video && user.id === video.userId);
 
   if (loading) {
     return (
@@ -94,7 +110,12 @@ const Video = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <VideoPaywall {...video} />
+        <VideoPaywall
+          {...video}
+          videoId={id}
+          isOwner={isOwner}
+          onToggleWatermark={handleToggleWatermark}
+        />
       </main>
     </div>
   );

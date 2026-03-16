@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2 } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
 import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
 import { toast } from "sonner";
@@ -14,6 +15,9 @@ interface VideoPaywallProps {
   creator: string;
   videoUrl?: string;
   watermarksEnabled?: boolean;
+  videoId?: string;
+  isOwner?: boolean;
+  onToggleWatermark?: (newValue: boolean) => void;
 }
 
 export const VideoPaywall = ({
