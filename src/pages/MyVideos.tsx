@@ -171,7 +171,23 @@ const MyVideos = () => {
                     <span>{new Date(video.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1.5 mr-2" title="Toggle watermarks">
+                    <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+                    <Switch
+                      checked={video.watermarks_enabled}
+                      onCheckedChange={() => handleToggleWatermark(video)}
+                      className="scale-90"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleCopyLink(video.id)}
+                    title="Copy purchase link"
+                  >
+                    <Link2 className="w-4 h-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

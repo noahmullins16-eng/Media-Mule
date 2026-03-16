@@ -89,9 +89,13 @@ export const VideoPaywall = ({
               />
 
               {/* Protection layers */}
-              <TiledWatermark />
-              <MovingWatermark />
-              <ForensicWatermark sessionId={sessionId} />
+              {watermarksEnabled && (
+                <>
+                  <TiledWatermark />
+                  <MovingWatermark />
+                  <ForensicWatermark sessionId={sessionId} />
+                </>
+              )}
 
               {/* Transparent click-capture layer prevents direct video interaction */}
               <div
