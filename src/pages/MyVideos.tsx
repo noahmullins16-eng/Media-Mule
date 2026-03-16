@@ -66,6 +66,30 @@ const MyVideos = () => {
     setLoadingVideos(false);
   };
 
+  const generateThumbnail = useCallback((videoId: string, url: string) => {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.preload = "metadata";
+    video.src = url;
+
+    video.addEventListener("loadeddata", () => {
+      video.currentTime = 1; // seek to 1 second
+    });
+
+    video.addEventListener("seeked", () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 160;
+      canvas.height = 90;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        setThumbnails((prev) => ({ ...prev, [videoId]: dataUrl }));
+      }
+    });
+  }, []);
+
   const handleDelete = async (video: VideoItem) => {
     if (!confirm(`Delete "${video.title}"? This cannot be undone.`)) return;
 
