@@ -21,6 +21,7 @@ const Video = () => {
     customWatermarkUrl: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [useCustomWatermark, setUseCustomWatermark] = useState(false);
 
   useEffect(() => {
     const fetchVideo = async () => {
