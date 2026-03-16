@@ -17,6 +17,8 @@ import {
   FileVideo,
   Settings,
   Crown,
+  DollarSign,
+  Clock,
 } from "lucide-react";
 
 const Dashboard = () => {
