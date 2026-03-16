@@ -131,6 +131,11 @@ const MyVideos = () => {
           </Link>
         </div>
 
+        {/* Custom Watermark Section */}
+        <div className="mb-8">
+          <WatermarkUploader onWatermarkUrl={() => {}} />
+        </div>
+
         {loadingVideos ? (
           <div className="flex justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
