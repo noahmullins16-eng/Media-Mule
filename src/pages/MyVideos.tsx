@@ -197,9 +197,17 @@ const MyVideos = () => {
                 key={video.id}
                 className="glass-card p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
               >
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                  <Video className="w-6 h-6 text-accent" />
-                </div>
+                {thumbnails[video.id] ? (
+                  <img
+                    src={thumbnails[video.id]}
+                    alt={video.title}
+                    className="w-24 h-14 rounded-lg object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-24 h-14 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                    <Video className="w-6 h-6 text-accent" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{video.title}</h3>
                   <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
