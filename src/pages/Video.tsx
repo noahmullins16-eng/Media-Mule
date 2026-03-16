@@ -18,6 +18,7 @@ const Video = () => {
     videoUrl: string;
     watermarksEnabled: boolean;
     userId: string;
+    customWatermarkUrl: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
