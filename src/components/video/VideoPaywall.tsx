@@ -196,6 +196,19 @@ export const VideoPaywall = ({
                       className="scale-90"
                     />
                   </div>
+                  {customWatermarkUrl && (
+                    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm cursor-pointer">
+                      <Checkbox
+                        checked={useCustomWatermark}
+                        onCheckedChange={(checked) => {
+                          onToggleCustomWatermark?.(!!checked);
+                        }}
+                        className="scale-90"
+                      />
+                      <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Custom Watermark</span>
+                    </label>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
