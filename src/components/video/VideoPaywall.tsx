@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2 } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
 import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
 import { toast } from "sonner";
@@ -14,6 +15,9 @@ interface VideoPaywallProps {
   creator: string;
   videoUrl?: string;
   watermarksEnabled?: boolean;
+  videoId?: string;
+  isOwner?: boolean;
+  onToggleWatermark?: (newValue: boolean) => void;
 }
 
 export const VideoPaywall = ({
@@ -25,6 +29,9 @@ export const VideoPaywall = ({
   creator,
   videoUrl,
   watermarksEnabled = true,
+  videoId,
+  isOwner = false,
+  onToggleWatermark,
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -167,11 +174,44 @@ export const VideoPaywall = ({
                 <span className="text-xs text-muted-foreground">{duration}</span>
               </div>
 
+              {/* Owner controls */}
+              {isOwner && (
+                <div className="mt-4 flex items-center gap-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm">
+                    <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Watermarks</span>
+                    <Switch
+                      checked={watermarksEnabled}
+                      onCheckedChange={(checked) => {
+                        onToggleWatermark?.(checked);
+                        toast.success(checked ? "Watermarks enabled" : "Watermarks disabled");
+                      }}
+                      className="scale-90"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => {
+                      const url = `${window.location.origin}/video/${videoId}`;
+                      navigator.clipboard.writeText(url);
+                      toast.success("Purchase link copied!");
+                    }}
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    Copy Link
+                  </Button>
+                </div>
+              )}
+
               {/* Protection badge */}
-              <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-medium">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Content Protected
-              </div>
+              {!isOwner && (
+                <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Content Protected
+                </div>
+              )}
             </div>
 
             <div className="glass-card p-6 text-center min-w-[240px]">
