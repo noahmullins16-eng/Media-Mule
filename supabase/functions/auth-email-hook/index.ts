@@ -17,7 +17,7 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Welcome to Media Mule — Confirm Your Account',
+  signup: 'Confirm your email',
   invite: "You've been invited",
   magiclink: 'Your login link',
   recovery: 'Reset your password',
@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "Media Mule"
+const SITE_NAME = "pay-for-play-vid"
 const SENDER_DOMAIN = "notify.mediamuleco.com"
 const ROOT_DOMAIN = "mediamuleco.com"
 const FROM_DOMAIN = "notify.mediamuleco.com" // Domain shown in From address (may be root or sender subdomain)

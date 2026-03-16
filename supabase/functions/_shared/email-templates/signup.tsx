@@ -9,7 +9,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Link,
   Preview,
   Text,
@@ -30,49 +29,29 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Welcome to Media Mule! Confirm your account to get started.</Preview>
+    <Preview>Confirm your email for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img
-          src="https://fyocavwmovqrctcxbkvs.supabase.co/storage/v1/object/public/email-assets/logo.png"
-          alt="Media Mule"
-          width="48"
-          height="48"
-          style={{ marginBottom: '24px' }}
-        />
-        <Heading style={h1}>Hi there,</Heading>
+        <Heading style={h1}>Confirm your email</Heading>
         <Text style={text}>
-          Welcome to Media Mule! We're excited to have you join our community.
+          Thanks for signing up for{' '}
+          <Link href={siteUrl} style={link}>
+            <strong>{siteName}</strong>
+          </Link>
+          !
         </Text>
         <Text style={text}>
-          Media Mule is designed to make working with media simple and secure. Our
-          platform allows creators and clients to safely exchange media files and
-          payments through a built-in escrow system, giving both sides confidence
-          throughout the process.
-        </Text>
-        <Text style={text}>
-          To get started, please confirm your email address by clicking the link below:
+          Please confirm your email address (
+          <Link href={`mailto:${recipient}`} style={link}>
+            {recipient}
+          </Link>
+          ) by clicking the button below:
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Confirm Your Account
+          Verify Email
         </Button>
-        <Text style={text}>
-          Once your account is confirmed, you'll be able to log in, set up your
-          profile, and start exchanging media securely.
-        </Text>
-        <Text style={text}>
-          If you didn't create a Media Mule account, you can safely ignore this email.
-        </Text>
-        <Text style={text}>
-          Thanks for joining us, and welcome to the mule team.
-        </Text>
-        <Text style={text}>
-          Best,
-          <br />
-          <strong>The Media Mule Team</strong>
-        </Text>
         <Text style={footer}>
-          <Link href="https://mediamuleco.com" style={footerLink}>MediaMuleco.com</Link>
+          If you didn't create an account, you can safely ignore this email.
         </Text>
       </Container>
     </Body>
@@ -81,28 +60,27 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Space Grotesk', Arial, sans-serif" }
-const container = { padding: '32px 25px' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: 'hsl(220, 20%, 10%)',
+  color: '#000000',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: 'hsl(220, 10%, 40%)',
-  lineHeight: '1.6',
-  margin: '0 0 16px',
+  color: '#55575d',
+  lineHeight: '1.5',
+  margin: '0 0 25px',
 }
+const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: 'hsl(25, 95%, 53%)',
+  backgroundColor: '#000000',
   color: '#ffffff',
   fontSize: '14px',
-  fontWeight: '600' as const,
-  borderRadius: '12px',
-  padding: '12px 24px',
+  borderRadius: '8px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
-const footerLink = { color: 'hsl(25, 95%, 53%)', textDecoration: 'none' }
