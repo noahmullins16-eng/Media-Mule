@@ -13,6 +13,7 @@ interface VideoPaywallProps {
   duration: string;
   creator: string;
   videoUrl?: string;
+  watermarksEnabled?: boolean;
 }
 
 export const VideoPaywall = ({
