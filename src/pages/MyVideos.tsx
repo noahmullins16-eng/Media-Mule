@@ -26,6 +26,7 @@ const MyVideos = () => {
   const navigate = useNavigate();
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!loading && !user) {
