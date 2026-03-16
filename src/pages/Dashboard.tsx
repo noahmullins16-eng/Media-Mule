@@ -19,7 +19,11 @@ import {
   Crown,
   DollarSign,
   Clock,
+  User,
+  Check,
+  Pencil,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
@@ -29,6 +33,10 @@ const Dashboard = () => {
   const [videoCount, setVideoCount] = useState(0);
   const [totalFileSize, setTotalFileSize] = useState(0);
   const [recentVideos, setRecentVideos] = useState<any[]>([]);
+  const [username, setUsername] = useState("");
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [savingUsername, setSavingUsername] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,13 +50,15 @@ const Dashboard = () => {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("creator_profiles")
-        .select("tier, storage_used")
+        .select("tier, storage_used, username")
         .eq("user_id", user.id)
         .maybeSingle();
       
       if (data) {
         setTier(data.tier as SubscriptionTier);
         setStorageUsed(data.storage_used);
+        setUsername(data.username || "");
+        setUsernameInput(data.username || "");
       }
     };
 
@@ -96,13 +106,53 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 pt-24 pb-16">
-        {/* Welcome */}
+        {/* Welcome & Username */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="font-display text-3xl font-bold mb-1">Creator Dashboard</h1>
-            <p className="text-muted-foreground">
-              Welcome back, {user.email?.split("@")[0]}
-            </p>
+            <div className="flex items-center gap-2">
+              {editingUsername ? (
+                <form
+                  className="flex items-center gap-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!user) return;
+                    setSavingUsername(true);
+                    const { error } = await supabase
+                      .from("creator_profiles")
+                      .update({ username: usernameInput.trim() || null })
+                      .eq("user_id", user.id);
+                    if (!error) {
+                      setUsername(usernameInput.trim());
+                      setEditingUsername(false);
+                    }
+                    setSavingUsername(false);
+                  }}
+                >
+                  <Input
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="Enter your username"
+                    className="h-8 w-48 text-sm"
+                    autoFocus
+                  />
+                  <Button type="submit" size="sm" variant="ghost" disabled={savingUsername} className="h-8 w-8 p-0">
+                    <Check className="w-4 h-4 text-accent" />
+                  </Button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => setEditingUsername(true)}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors group"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="text-sm">
+                    {username || "Set your username"}
+                  </span>
+                  <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex gap-3">
             <Link to="/upload">

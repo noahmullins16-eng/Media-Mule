@@ -1,0 +1,1 @@
+ALTER TABLE public.creator_profiles ADD COLUMN username text;
