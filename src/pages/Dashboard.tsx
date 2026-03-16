@@ -19,7 +19,11 @@ import {
   Crown,
   DollarSign,
   Clock,
+  User,
+  Check,
+  Pencil,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
