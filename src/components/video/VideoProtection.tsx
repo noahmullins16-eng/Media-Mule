@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
  * across the entire video surface in a diagonal pattern.
  * One instance also bounces (MovingWatermark handles that).
  */
-export const TiledWatermark = () => {
+export const TiledWatermark = ({ customImageUrl }: { customImageUrl?: string | null }) => {
   const tiles: { row: number; col: number }[] = [];
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) {
@@ -16,17 +16,35 @@ export const TiledWatermark = () => {
   return (
     <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" style={{ zIndex: 20 }}>
       {tiles.map(({ row, col }) => (
-        <span
-          key={`${row}-${col}`}
-          className="absolute font-display text-sm md:text-base font-bold tracking-widest text-white/15 whitespace-nowrap"
-          style={{
-            left: `${col * 25 + 5}%`,
-            top: `${row * 25 + 8}%`,
-            transform: "rotate(-25deg)",
-          }}
-        >
-          MEDIA MULE
-        </span>
+        customImageUrl ? (
+          <img
+            key={`${row}-${col}`}
+            src={customImageUrl}
+            alt=""
+            className="absolute"
+            style={{
+              left: `${col * 25 + 5}%`,
+              top: `${row * 25 + 8}%`,
+              transform: "rotate(-25deg)",
+              width: "80px",
+              height: "auto",
+              opacity: 0.15,
+            }}
+            draggable={false}
+          />
+        ) : (
+          <span
+            key={`${row}-${col}`}
+            className="absolute font-display text-sm md:text-base font-bold tracking-widest text-white/15 whitespace-nowrap"
+            style={{
+              left: `${col * 25 + 5}%`,
+              top: `${row * 25 + 8}%`,
+              transform: "rotate(-25deg)",
+            }}
+          >
+            MEDIA MULE
+          </span>
+        )
       ))}
     </div>
   );

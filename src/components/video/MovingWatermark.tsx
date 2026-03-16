@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export const MovingWatermark = () => {
+export const MovingWatermark = ({ customImageUrl }: { customImageUrl?: string | null }) => {
   const [position, setPosition] = useState({ x: 10, y: 10 });
   const [direction, setDirection] = useState({ dx: 1, dy: 1 });
 
@@ -51,11 +51,20 @@ export const MovingWatermark = () => {
         zIndex: 22,
       }}
     >
-      <span className="text-white/25 font-display text-xl md:text-3xl font-bold tracking-wider whitespace-nowrap inline-block"
-        style={{ transform: "rotate(-20deg)" }}
-      >
-        MEDIA MULE
-      </span>
+      {customImageUrl ? (
+        <img
+          src={customImageUrl}
+          alt=""
+          style={{ transform: "rotate(-20deg)", width: "120px", height: "auto", opacity: 0.25 }}
+          draggable={false}
+        />
+      ) : (
+        <span className="text-white/25 font-display text-xl md:text-3xl font-bold tracking-wider whitespace-nowrap inline-block"
+          style={{ transform: "rotate(-20deg)" }}
+        >
+          MEDIA MULE
+        </span>
+      )}
     </div>
   );
 };
