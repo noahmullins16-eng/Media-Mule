@@ -331,6 +331,10 @@ export const VideoUploader = () => {
             disabled={isUploading}
           />
         </div>
+
+        {watermarksEnabled && (
+          <WatermarkUploader onWatermarkUrl={setCustomWatermarkUrl} />
+        )}
       </div>
 
       {/* Submit */}
