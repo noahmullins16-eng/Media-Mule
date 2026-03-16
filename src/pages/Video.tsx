@@ -14,6 +14,7 @@ const Video = () => {
     duration: string;
     creator: string;
     videoUrl: string;
+    watermarksEnabled: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
