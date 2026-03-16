@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
+import { WatermarkUploader } from "./WatermarkUploader";
 
 export const VideoUploader = () => {
   const { user } = useAuth();
