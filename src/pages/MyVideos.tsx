@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Upload, Video, Trash2, ExternalLink, Link2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { WatermarkUploader } from "@/components/upload/WatermarkUploader";
 
 interface VideoItem {
   id: string;
