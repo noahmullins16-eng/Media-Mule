@@ -91,7 +91,7 @@ const VideoPreview = () => {
         thumbnail: data.thumbnail_url || "/placeholder.svg",
         price: Number(data.price),
         duration: data.status === "published" ? "Available now" : "Processing",
-        creator: "Media Mule Creator",
+        creator: creatorUsername,
         videoUrl,
         watermarksEnabled: data.watermarks_enabled !== false,
         userId: data.user_id,
