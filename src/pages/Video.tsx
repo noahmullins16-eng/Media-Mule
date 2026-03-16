@@ -80,6 +80,8 @@ const Video = () => {
         userId: data.user_id,
         customWatermarkUrl,
       });
+      // Auto-enable custom watermark if one exists
+      if (customWatermarkUrl) setUseCustomWatermark(true);
       setLoading(false);
     };
 
