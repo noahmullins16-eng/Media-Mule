@@ -20,6 +20,8 @@ interface VideoPaywallProps {
   isOwner?: boolean;
   onToggleWatermark?: (newValue: boolean) => void;
   customWatermarkUrl?: string | null;
+  useCustomWatermark?: boolean;
+  onToggleCustomWatermark?: (newValue: boolean) => void;
 }
 
 export const VideoPaywall = ({
