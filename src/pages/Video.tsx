@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Video = () => {
   const { id } = useParams<{ id: string }>();
