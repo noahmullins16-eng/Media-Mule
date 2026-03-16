@@ -33,6 +33,10 @@ const Dashboard = () => {
   const [videoCount, setVideoCount] = useState(0);
   const [totalFileSize, setTotalFileSize] = useState(0);
   const [recentVideos, setRecentVideos] = useState<any[]>([]);
+  const [username, setUsername] = useState("");
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [savingUsername, setSavingUsername] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
