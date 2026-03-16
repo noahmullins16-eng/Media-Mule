@@ -86,7 +86,7 @@ const Video = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header minimal />
         <main className="container mx-auto px-4 pt-24 pb-16 flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
         </main>
