@@ -100,8 +100,8 @@ export const VideoPaywall = ({
               {/* Protection layers */}
               {watermarksEnabled && (
                 <>
-                  <TiledWatermark />
-                  <MovingWatermark />
+                  <TiledWatermark customImageUrl={customWatermarkUrl} />
+                  <MovingWatermark customImageUrl={customWatermarkUrl} />
                   <ForensicWatermark sessionId={sessionId} />
                 </>
               )}
