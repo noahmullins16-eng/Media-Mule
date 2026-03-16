@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-const Video = () => {
+const VideoPreview = () => {
   const { id } = useParams<{ id: string }>();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [video, setVideo] = useState<{
     title: string;
     description: string;
@@ -20,10 +22,17 @@ const Video = () => {
     customWatermarkUrl: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [useCustomWatermark, setUseCustomWatermark] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const fetchVideo = async () => {
-      if (!id) {
+      if (!id || !user) {
         setLoading(false);
         return;
       }
@@ -41,6 +50,12 @@ const Video = () => {
         return;
       }
 
+      // Only the owner can access this preview page
+      if (data.user_id !== user.id) {
+        navigate(`/video/${id}`);
+        return;
+      }
+
       let videoUrl = "";
       if (data.file_path) {
         const { data: signedData } = await supabase.storage
@@ -51,7 +66,6 @@ const Video = () => {
         }
       }
 
-      // Fetch creator's custom watermark
       let customWatermarkUrl: string | null = null;
       const { data: profileData } = await supabase
         .from("creator_profiles")
@@ -78,13 +92,25 @@ const Video = () => {
         userId: data.user_id,
         customWatermarkUrl,
       });
+      if (customWatermarkUrl) setUseCustomWatermark(true);
       setLoading(false);
     };
 
     fetchVideo();
-  }, [id]);
+  }, [id, user]);
 
-  if (loading) {
+  const handleToggleWatermark = async (newValue: boolean) => {
+    if (!id) return;
+    const { error } = await supabase
+      .from("videos")
+      .update({ watermarks_enabled: newValue })
+      .eq("id", id);
+    if (!error && video) {
+      setVideo({ ...video, watermarksEnabled: newValue });
+    }
+  };
+
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -116,12 +142,14 @@ const Video = () => {
         <VideoPaywall
           {...video}
           videoId={id}
-          isOwner={false}
-          useCustomWatermark={!!video.customWatermarkUrl}
+          isOwner={true}
+          onToggleWatermark={handleToggleWatermark}
+          useCustomWatermark={useCustomWatermark}
+          onToggleCustomWatermark={setUseCustomWatermark}
         />
       </main>
     </div>
   );
 };
 
-export default Video;
+export default VideoPreview;
