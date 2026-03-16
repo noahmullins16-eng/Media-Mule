@@ -142,6 +142,7 @@ export const VideoUploader = () => {
         file_path: filePath,
         file_size: file.size,
         status: "published",
+        watermarks_enabled: watermarksEnabled,
       });
 
       if (dbError) throw dbError;
