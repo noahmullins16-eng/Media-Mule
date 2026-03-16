@@ -184,37 +184,6 @@ export const VideoPaywall = ({
               {/* Owner controls */}
               {isOwner && (
                 <div className="mt-4 flex items-center gap-4">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm">
-                    <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-muted-foreground">Watermarks</span>
-                    <Switch
-                      checked={watermarksEnabled}
-                      onCheckedChange={(checked) => {
-                        onToggleWatermark?.(checked);
-                        toast.success(checked ? "Watermarks enabled" : "Watermarks disabled");
-                      }}
-                      className="scale-90"
-                    />
-                  </div>
-                  {customWatermarkUrl ? (
-                    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm cursor-pointer">
-                      <Checkbox
-                        checked={useCustomWatermark}
-                        onCheckedChange={(checked) => {
-                          onToggleCustomWatermark?.(!!checked);
-                          toast.success(checked ? "Custom watermark enabled" : "Using default watermark");
-                        }}
-                        className="scale-90"
-                      />
-                      <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-muted-foreground">Custom Watermark</span>
-                    </label>
-                  ) : (
-                    <a href="/my-videos" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm hover:bg-muted/80 transition-colors">
-                      <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-muted-foreground">Upload Custom Watermark</span>
-                    </a>
-                  )}
                   <Button
                     variant="outline"
                     size="sm"
