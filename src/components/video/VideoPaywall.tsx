@@ -196,18 +196,24 @@ export const VideoPaywall = ({
                       className="scale-90"
                     />
                   </div>
-                  {customWatermarkUrl && (
+                  {customWatermarkUrl ? (
                     <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm cursor-pointer">
                       <Checkbox
                         checked={useCustomWatermark}
                         onCheckedChange={(checked) => {
                           onToggleCustomWatermark?.(!!checked);
+                          toast.success(checked ? "Custom watermark enabled" : "Using default watermark");
                         }}
                         className="scale-90"
                       />
                       <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="text-muted-foreground">Custom Watermark</span>
                     </label>
+                  ) : (
+                    <a href="/my-videos" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm hover:bg-muted/80 transition-colors">
+                      <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Upload Custom Watermark</span>
+                    </a>
                   )}
                   <Button
                     variant="outline"
