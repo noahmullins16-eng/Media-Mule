@@ -1,7 +1,9 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, CreditCard, Volume2, VolumeX } from "lucide-react";
+import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
+import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
+import { toast } from "sonner";
 
 interface VideoPaywallProps {
   title: string;
@@ -26,6 +28,24 @@ export const VideoPaywall = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
 
+  // Generate a unique session fingerprint for forensic watermarking
+  const sessionId = useMemo(
+    () => `MM-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase(),
+    []
+  );
+
+  const handleRecordingDetected = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+    toast.error("Screen recording detected. Video has been paused.", {
+      icon: <ShieldCheck className="w-4 h-4" />,
+    });
+  }, []);
+
+  useScreenRecordingGuard(videoRef, isPlaying, handleRecordingDetected);
+
   const togglePlay = () => {
     if (!videoRef.current) return;
     if (isPlaying) {
@@ -46,7 +66,11 @@ export const VideoPaywall = ({
     <div className="max-w-4xl mx-auto">
       <div className="glass-card overflow-hidden">
         {/* Video Player / Preview */}
-        <div className="relative aspect-video bg-black overflow-hidden select-none">
+        <div
+          className="relative aspect-video bg-black overflow-hidden select-none"
+          onContextMenu={(e) => e.preventDefault()}
+          style={{ userSelect: "none", WebkitUserSelect: "none" }}
+        >
           {videoUrl ? (
             <>
               <video
@@ -57,15 +81,30 @@ export const VideoPaywall = ({
                 playsInline
                 onEnded={() => setIsPlaying(false)}
                 onContextMenu={(e) => e.preventDefault()}
-                controlsList="nodownload"
+                controlsList="nodownload nofullscreen noremoteplayback"
+                disablePictureInPicture
+                style={{ pointerEvents: "none" }}
               />
 
-              {/* Moving Watermark Overlay */}
+              {/* Protection layers */}
+              <TiledWatermark />
               <MovingWatermark />
+              <ForensicWatermark sessionId={sessionId} />
 
-              {/* Play / Pause button overlay */}
+              {/* Transparent click-capture layer prevents direct video interaction */}
+              <div
+                className="absolute inset-0"
+                style={{ zIndex: 25 }}
+                onClick={togglePlay}
+                onContextMenu={(e) => e.preventDefault()}
+              />
+
+              {/* Play / Pause overlay */}
               {!isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <div
+                  className="absolute inset-0 flex items-center justify-center bg-black/30"
+                  style={{ zIndex: 26 }}
+                >
                   <button
                     onClick={togglePlay}
                     className="w-20 h-20 rounded-full bg-accent/90 flex items-center justify-center shadow-lg shadow-accent/50 hover:scale-110 transition-transform"
@@ -77,14 +116,20 @@ export const VideoPaywall = ({
 
               {/* Controls bar */}
               {isPlaying && (
-                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-2">
+                <div
+                  className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-2"
+                  style={{ zIndex: 27 }}
+                >
                   <button onClick={togglePlay} className="text-white hover:text-accent transition-colors">
                     <Pause className="w-5 h-5" />
                   </button>
                   <button onClick={toggleMute} className="text-white hover:text-accent transition-colors">
                     {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                   </button>
-                  <span className="ml-auto text-xs text-white/70 font-medium">PREVIEW</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-accent/70" />
+                    <span className="text-xs text-white/70 font-medium">DRM PROTECTED</span>
+                  </div>
                 </div>
               )}
             </>
@@ -114,6 +159,12 @@ export const VideoPaywall = ({
                   <span className="text-sm text-muted-foreground">by {creator}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">{duration}</span>
+              </div>
+
+              {/* Protection badge */}
+              <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-medium">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Content Protected
               </div>
             </div>
 
