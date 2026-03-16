@@ -26,6 +26,7 @@ export const VideoUploader = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [tier, setTier] = useState<SubscriptionTier>("starter");
+  const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
