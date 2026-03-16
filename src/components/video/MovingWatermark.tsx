@@ -5,7 +5,7 @@ export const MovingWatermark = () => {
   const [direction, setDirection] = useState({ dx: 1, dy: 1 });
 
   useEffect(() => {
-    const speed = 0.4;
+    const speed = 0.5;
     let animFrame: number;
     let lastTime = performance.now();
 
@@ -19,13 +19,13 @@ export const MovingWatermark = () => {
         let newDx = direction.dx;
         let newDy = direction.dy;
 
-        if (newX > 75 || newX < 0) {
+        if (newX > 70 || newX < 0) {
           newDx = -newDx;
-          newX = Math.max(0, Math.min(75, newX));
+          newX = Math.max(0, Math.min(70, newX));
         }
-        if (newY > 85 || newY < 0) {
+        if (newY > 80 || newY < 0) {
           newDy = -newDy;
-          newY = Math.max(0, Math.min(85, newY));
+          newY = Math.max(0, Math.min(80, newY));
         }
 
         if (newDx !== direction.dx || newDy !== direction.dy) {
@@ -48,10 +48,12 @@ export const MovingWatermark = () => {
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
-        zIndex: 20,
+        zIndex: 22,
       }}
     >
-      <span className="text-white/30 font-display text-lg md:text-2xl font-bold tracking-wider whitespace-nowrap rotate-[-20deg] inline-block">
+      <span className="text-white/25 font-display text-xl md:text-3xl font-bold tracking-wider whitespace-nowrap inline-block"
+        style={{ transform: "rotate(-20deg)" }}
+      >
         MEDIA MULE
       </span>
     </div>
