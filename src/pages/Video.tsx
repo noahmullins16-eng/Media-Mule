@@ -27,7 +27,7 @@ const Video = () => {
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status, file_path")
+        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled")
         .eq("id", id)
         .maybeSingle();
 
