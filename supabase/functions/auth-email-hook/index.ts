@@ -17,7 +17,7 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
+  signup: 'Welcome to Media Mule — Confirm Your Account',
   invite: "You've been invited",
   magiclink: 'Your login link',
   recovery: 'Reset your password',
