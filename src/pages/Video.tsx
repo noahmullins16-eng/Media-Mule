@@ -135,6 +135,8 @@ const Video = () => {
           videoId={id}
           isOwner={isOwner}
           onToggleWatermark={handleToggleWatermark}
+          useCustomWatermark={useCustomWatermark}
+          onToggleCustomWatermark={setUseCustomWatermark}
         />
       </main>
     </div>
