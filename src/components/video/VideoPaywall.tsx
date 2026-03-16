@@ -18,6 +18,7 @@ interface VideoPaywallProps {
   videoId?: string;
   isOwner?: boolean;
   onToggleWatermark?: (newValue: boolean) => void;
+  customWatermarkUrl?: string | null;
 }
 
 export const VideoPaywall = ({
@@ -32,6 +33,7 @@ export const VideoPaywall = ({
   videoId,
   isOwner = false,
   onToggleWatermark,
+  customWatermarkUrl,
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -98,8 +100,8 @@ export const VideoPaywall = ({
               {/* Protection layers */}
               {watermarksEnabled && (
                 <>
-                  <TiledWatermark />
-                  <MovingWatermark />
+                  <TiledWatermark customImageUrl={customWatermarkUrl} />
+                  <MovingWatermark customImageUrl={customWatermarkUrl} />
                   <ForensicWatermark sessionId={sessionId} />
                 </>
               )}

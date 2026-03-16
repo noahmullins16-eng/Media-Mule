@@ -17,6 +17,7 @@ export type Database = {
       creator_profiles: {
         Row: {
           created_at: string
+          custom_watermark_path: string | null
           id: string
           storage_used: number
           tier: Database["public"]["Enums"]["subscription_tier"]
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_watermark_path?: string | null
           id?: string
           storage_used?: number
           tier?: Database["public"]["Enums"]["subscription_tier"]
@@ -33,6 +35,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_watermark_path?: string | null
           id?: string
           storage_used?: number
           tier?: Database["public"]["Enums"]["subscription_tier"]

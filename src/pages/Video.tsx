@@ -18,6 +18,7 @@ const Video = () => {
     videoUrl: string;
     watermarksEnabled: boolean;
     userId: string;
+    customWatermarkUrl: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +52,21 @@ const Video = () => {
         }
       }
 
+      // Fetch creator's custom watermark
+      let customWatermarkUrl: string | null = null;
+      const { data: profileData } = await supabase
+        .from("creator_profiles")
+        .select("custom_watermark_path")
+        .eq("user_id", data.user_id)
+        .single();
+
+      if (profileData?.custom_watermark_path) {
+        const { data: wmUrl } = supabase.storage
+          .from("watermarks")
+          .getPublicUrl(profileData.custom_watermark_path);
+        customWatermarkUrl = wmUrl?.publicUrl || null;
+      }
+
       setVideo({
         title: data.title,
         description: data.description || "No description provided.",
@@ -61,6 +77,7 @@ const Video = () => {
         videoUrl,
         watermarksEnabled: data.watermarks_enabled !== false,
         userId: data.user_id,
+        customWatermarkUrl,
       });
       setLoading(false);
     };

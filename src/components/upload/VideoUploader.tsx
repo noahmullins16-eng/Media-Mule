@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
+import { WatermarkUploader } from "./WatermarkUploader";
 
 export const VideoUploader = () => {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export const VideoUploader = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [tier, setTier] = useState<SubscriptionTier>("starter");
+  const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -329,6 +331,10 @@ export const VideoUploader = () => {
             disabled={isUploading}
           />
         </div>
+
+        {watermarksEnabled && (
+          <WatermarkUploader onWatermarkUrl={setCustomWatermarkUrl} />
+        )}
       </div>
 
       {/* Submit */}
