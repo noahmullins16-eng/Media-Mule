@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo.png";
 
-export const Header = () => {
+export const Header = ({ minimal = false }: { minimal?: boolean }) => {
   const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
@@ -26,50 +26,60 @@ export const Header = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
-              Pricing
-            </Link>
-            <Link to="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-              How It Works
-            </Link>
-            {user && (
+            {minimal ? (
+              <Link to="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+                How It Works
+              </Link>
+            ) : (
               <>
-                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Dashboard
+                <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Pricing
                 </Link>
-                <Link to="/my-videos" className="text-muted-foreground hover:text-foreground transition-colors">
-                  My Media
+                <Link to="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+                  How It Works
                 </Link>
+                {user && (
+                  <>
+                    <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Dashboard
+                    </Link>
+                    <Link to="/my-videos" className="text-muted-foreground hover:text-foreground transition-colors">
+                      My Media
+                    </Link>
+                  </>
+                )}
               </>
             )}
           </nav>
 
           {/* CTA */}
-          <div className="flex items-center gap-3">
-            {user ? (
-              <>
-                <span className="hidden sm:inline-flex text-sm text-muted-foreground">
-                  {user.email}
-                </span>
-                <Button variant="ghost" onClick={handleSignOut}>
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link to="/auth">
-                  <Button variant="ghost" className="hidden sm:inline-flex">
-                    Sign In
+          {!minimal && (
+            <div className="flex items-center gap-3">
+              {user ? (
+                <>
+                  <span className="hidden sm:inline-flex text-sm text-muted-foreground">
+                    {user.email}
+                  </span>
+                  <Button variant="ghost" onClick={handleSignOut}>
+                    Sign Out
                   </Button>
-                </Link>
-                <Link to="/upload">
-                  <Button variant="hero" size="sm">
-                    Start Selling
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
+                </>
+              ) : (
+                <>
+                  <Link to="/auth">
+                    <Button variant="ghost" className="hidden sm:inline-flex">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link to="/upload">
+                    <Button variant="hero" size="sm">
+                      Start Selling
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>

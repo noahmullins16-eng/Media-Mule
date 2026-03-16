@@ -97,7 +97,7 @@ const Video = () => {
   if (!video) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header minimal />
         <main className="container mx-auto px-4 pt-24 pb-16 text-center">
           <h1 className="mb-4 font-display text-4xl font-bold">Video Not Found</h1>
           <p className="text-muted-foreground">
