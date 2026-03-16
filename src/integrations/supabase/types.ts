@@ -204,6 +204,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          watermarks_enabled: boolean
         }
         Insert: {
           created_at?: string
@@ -217,6 +218,7 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          watermarks_enabled?: boolean
         }
         Update: {
           created_at?: string
@@ -230,6 +232,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          watermarks_enabled?: boolean
         }
         Relationships: []
       }

@@ -14,6 +14,7 @@ const Video = () => {
     duration: string;
     creator: string;
     videoUrl: string;
+    watermarksEnabled: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +27,7 @@ const Video = () => {
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status, file_path")
+        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled")
         .eq("id", id)
         .maybeSingle();
 
@@ -56,6 +57,7 @@ const Video = () => {
         duration: data.status === "published" ? "Available now" : "Processing",
         creator: "Media Mule Creator",
         videoUrl,
+        watermarksEnabled: data.watermarks_enabled !== false,
       });
       setLoading(false);
     };

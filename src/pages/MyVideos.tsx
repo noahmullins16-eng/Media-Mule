@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Upload, Video, Trash2, ExternalLink } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Upload, Video, Trash2, ExternalLink, Link2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 interface VideoItem {
@@ -16,6 +17,7 @@ interface VideoItem {
   file_size: number | null;
   status: string;
   created_at: string;
+  watermarks_enabled: boolean;
 }
 
 const MyVideos = () => {
@@ -76,6 +78,31 @@ const MyVideos = () => {
     } else {
       toast.success("Video deleted");
       setVideos((prev) => prev.filter((v) => v.id !== video.id));
+    }
+  };
+
+  const handleCopyLink = (videoId: string) => {
+    const url = `${window.location.origin}/video/${videoId}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Purchase link copied to clipboard!");
+  };
+
+  const handleToggleWatermark = async (video: VideoItem) => {
+    const newValue = !video.watermarks_enabled;
+    const { error } = await supabase
+      .from("videos")
+      .update({ watermarks_enabled: newValue } as any)
+      .eq("id", video.id);
+
+    if (error) {
+      toast.error("Failed to update watermark setting");
+    } else {
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === video.id ? { ...v, watermarks_enabled: newValue } : v
+        )
+      );
+      toast.success(newValue ? "Watermarks enabled" : "Watermarks disabled");
     }
   };
 
@@ -144,7 +171,23 @@ const MyVideos = () => {
                     <span>{new Date(video.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1.5 mr-2" title="Toggle watermarks">
+                    <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+                    <Switch
+                      checked={video.watermarks_enabled}
+                      onCheckedChange={() => handleToggleWatermark(video)}
+                      className="scale-90"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleCopyLink(video.id)}
+                    title="Copy purchase link"
+                  >
+                    <Link2 className="w-4 h-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

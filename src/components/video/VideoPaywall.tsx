@@ -13,6 +13,7 @@ interface VideoPaywallProps {
   duration: string;
   creator: string;
   videoUrl?: string;
+  watermarksEnabled?: boolean;
 }
 
 export const VideoPaywall = ({
@@ -23,6 +24,7 @@ export const VideoPaywall = ({
   duration,
   creator,
   videoUrl,
+  watermarksEnabled = true,
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -87,9 +89,13 @@ export const VideoPaywall = ({
               />
 
               {/* Protection layers */}
-              <TiledWatermark />
-              <MovingWatermark />
-              <ForensicWatermark sessionId={sessionId} />
+              {watermarksEnabled && (
+                <>
+                  <TiledWatermark />
+                  <MovingWatermark />
+                  <ForensicWatermark sessionId={sessionId} />
+                </>
+              )}
 
               {/* Transparent click-capture layer prevents direct video interaction */}
               <div

@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Video, DollarSign, X, Check } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Upload, Video, DollarSign, X, Check, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -18,6 +20,7 @@ export const VideoUploader = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [watermarksEnabled, setWatermarksEnabled] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
@@ -139,6 +142,7 @@ export const VideoUploader = () => {
         file_path: filePath,
         file_size: file.size,
         status: "published",
+        watermarks_enabled: watermarksEnabled,
       });
 
       if (dbError) throw dbError;
@@ -308,6 +312,22 @@ export const VideoUploader = () => {
               required
             />
           </div>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-accent" />
+            <div>
+              <Label htmlFor="watermarks" className="text-sm font-medium">Watermark Protection</Label>
+              <p className="text-xs text-muted-foreground">Overlay watermarks on the video preview to deter piracy</p>
+            </div>
+          </div>
+          <Switch
+            id="watermarks"
+            checked={watermarksEnabled}
+            onCheckedChange={setWatermarksEnabled}
+            disabled={isUploading}
+          />
         </div>
       </div>
 
