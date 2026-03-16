@@ -265,10 +265,12 @@ const Dashboard = () => {
                   Upload Your First File
                 </Button>
               </Link>
+            </div>
+          )}
         </div>
 
         {/* Transaction History */}
-        <div className="glass-card p-6 mt-6">
+        <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display font-semibold text-lg flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-accent" />
@@ -284,8 +286,6 @@ const Dashboard = () => {
               When buyers purchase your media, transactions will appear here with payment details and download history.
             </p>
           </div>
-        </div>
-          )}
         </div>
       </main>
     </div>
