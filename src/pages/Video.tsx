@@ -13,6 +13,7 @@ const Video = () => {
     price: number;
     duration: string;
     creator: string;
+    videoUrl: string;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,21 +26,26 @@ const Video = () => {
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status")
+        .select("title, description, price, thumbnail_url, status, file_path")
         .eq("id", id)
         .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         console.error("Error fetching video:", error);
         setVideo(null);
         setLoading(false);
         return;
       }
 
-      if (!data) {
-        setVideo(null);
-        setLoading(false);
-        return;
+      // Get a signed URL for preview playback
+      let videoUrl = "";
+      if (data.file_path) {
+        const { data: signedData } = await supabase.storage
+          .from("videos")
+          .createSignedUrl(data.file_path, 3600);
+        if (signedData?.signedUrl) {
+          videoUrl = signedData.signedUrl;
+        }
       }
 
       setVideo({
@@ -49,6 +55,7 @@ const Video = () => {
         price: Number(data.price),
         duration: data.status === "published" ? "Available now" : "Processing",
         creator: "Media Mule Creator",
+        videoUrl,
       });
       setLoading(false);
     };
