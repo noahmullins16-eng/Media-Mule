@@ -37,6 +37,8 @@ export const VideoPaywall = ({
   isOwner = false,
   onToggleWatermark,
   customWatermarkUrl,
+  useCustomWatermark = false,
+  onToggleCustomWatermark,
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
