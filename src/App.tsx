@@ -13,6 +13,7 @@ import MyVideos from "./pages/MyVideos";
 import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
 import Video from "./pages/Video";
+import VideoPreview from "./pages/VideoPreview";
 import HowItWorks from "./pages/HowItWorks";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -31,6 +32,7 @@ const AppRoutes = () => {
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/upload" element={<Upload />} />
       <Route path="/video/:id" element={<Video />} />
+      <Route path="/preview/:id" element={<VideoPreview />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/admin" element={<AdminDashboard />} />

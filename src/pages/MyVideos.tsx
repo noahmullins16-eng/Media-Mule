@@ -239,7 +239,7 @@ const MyVideos = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => navigate(`/video/${video.id}`)}
+                    onClick={() => navigate(`/preview/${video.id}`)}
                     title="View"
                   >
                     <ExternalLink className="w-4 h-4" />
