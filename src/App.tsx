@@ -13,6 +13,7 @@ import MyVideos from "./pages/MyVideos";
 import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
 import Video from "./pages/Video";
+import VideoPreview from "./pages/VideoPreview";
 import HowItWorks from "./pages/HowItWorks";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
