@@ -1,7 +1,8 @@
 import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
 import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
 import { toast } from "sonner";
@@ -19,6 +20,8 @@ interface VideoPaywallProps {
   isOwner?: boolean;
   onToggleWatermark?: (newValue: boolean) => void;
   customWatermarkUrl?: string | null;
+  useCustomWatermark?: boolean;
+  onToggleCustomWatermark?: (newValue: boolean) => void;
 }
 
 export const VideoPaywall = ({
@@ -34,6 +37,8 @@ export const VideoPaywall = ({
   isOwner = false,
   onToggleWatermark,
   customWatermarkUrl,
+  useCustomWatermark = false,
+  onToggleCustomWatermark,
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -100,8 +105,8 @@ export const VideoPaywall = ({
               {/* Protection layers */}
               {watermarksEnabled && (
                 <>
-                  <TiledWatermark customImageUrl={customWatermarkUrl} />
-                  <MovingWatermark customImageUrl={customWatermarkUrl} />
+                  <TiledWatermark customImageUrl={useCustomWatermark ? customWatermarkUrl : null} />
+                  <MovingWatermark customImageUrl={useCustomWatermark ? customWatermarkUrl : null} />
                   <ForensicWatermark sessionId={sessionId} />
                 </>
               )}
@@ -191,6 +196,19 @@ export const VideoPaywall = ({
                       className="scale-90"
                     />
                   </div>
+                  {customWatermarkUrl && (
+                    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm cursor-pointer">
+                      <Checkbox
+                        checked={useCustomWatermark}
+                        onCheckedChange={(checked) => {
+                          onToggleCustomWatermark?.(!!checked);
+                        }}
+                        className="scale-90"
+                      />
+                      <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Custom Watermark</span>
+                    </label>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

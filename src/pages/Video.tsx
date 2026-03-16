@@ -21,6 +21,7 @@ const Video = () => {
     customWatermarkUrl: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [useCustomWatermark, setUseCustomWatermark] = useState(false);
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -79,6 +80,8 @@ const Video = () => {
         userId: data.user_id,
         customWatermarkUrl,
       });
+      // Auto-enable custom watermark if one exists
+      if (customWatermarkUrl) setUseCustomWatermark(true);
       setLoading(false);
     };
 
@@ -132,6 +135,8 @@ const Video = () => {
           videoId={id}
           isOwner={isOwner}
           onToggleWatermark={handleToggleWatermark}
+          useCustomWatermark={useCustomWatermark}
+          onToggleCustomWatermark={setUseCustomWatermark}
         />
       </main>
     </div>
