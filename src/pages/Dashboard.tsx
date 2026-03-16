@@ -225,21 +225,46 @@ const Dashboard = () => {
               View All
             </Link>
           </div>
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Video className="w-8 h-8 text-muted-foreground" />
+          {recentVideos.length > 0 ? (
+            <div className="space-y-3">
+              {recentVideos.map((v) => (
+                <Link
+                  key={v.id}
+                  to={`/video/${v.id}`}
+                  className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                    <Video className="w-5 h-5 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{v.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      ${Number(v.price).toFixed(2)} · {new Date(v.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <span className="text-xs font-medium capitalize px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+                    {v.status}
+                  </span>
+                </Link>
+              ))}
             </div>
-            <h3 className="font-semibold mb-1">No uploads yet</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-              Upload your first file to start distributing media through MediaMule.
-            </p>
-            <Link to="/upload">
-              <Button variant="hero" size="sm">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Your First File
-              </Button>
-            </Link>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Video className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold mb-1">No uploads yet</h3>
+              <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+                Upload your first file to start distributing media through MediaMule.
+              </p>
+              <Link to="/upload">
+                <Button variant="hero" size="sm">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Your First File
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </main>
     </div>
