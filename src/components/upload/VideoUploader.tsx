@@ -313,6 +313,22 @@ export const VideoUploader = () => {
             />
           </div>
         </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-accent" />
+            <div>
+              <Label htmlFor="watermarks" className="text-sm font-medium">Watermark Protection</Label>
+              <p className="text-xs text-muted-foreground">Overlay watermarks on the video preview to deter piracy</p>
+            </div>
+          </div>
+          <Switch
+            id="watermarks"
+            checked={watermarksEnabled}
+            onCheckedChange={setWatermarksEnabled}
+            disabled={isUploading}
+          />
+        </div>
       </div>
 
       {/* Submit */}
