@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Upload, Video, Trash2, ExternalLink } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Upload, Video, Trash2, ExternalLink, Link2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 interface VideoItem {
@@ -16,6 +17,7 @@ interface VideoItem {
   file_size: number | null;
   status: string;
   created_at: string;
+  watermarks_enabled: boolean;
 }
 
 const MyVideos = () => {
