@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ const MyVideos = () => {
   const navigate = useNavigate();
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!loading && !user) {
@@ -52,9 +53,42 @@ const MyVideos = () => {
       toast.error("Failed to load videos");
     } else {
       setVideos(data || []);
+      // Generate thumbnails from video files
+      (data || []).forEach(async (v) => {
+        const { data: signedData } = await supabase.storage
+          .from("videos")
+          .createSignedUrl(v.file_path, 3600);
+        if (signedData?.signedUrl) {
+          generateThumbnail(v.id, signedData.signedUrl);
+        }
+      });
     }
     setLoadingVideos(false);
   };
+
+  const generateThumbnail = useCallback((videoId: string, url: string) => {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.preload = "metadata";
+    video.src = url;
+
+    video.addEventListener("loadeddata", () => {
+      video.currentTime = 1; // seek to 1 second
+    });
+
+    video.addEventListener("seeked", () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 160;
+      canvas.height = 90;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        setThumbnails((prev) => ({ ...prev, [videoId]: dataUrl }));
+      }
+    });
+  }, []);
 
   const handleDelete = async (video: VideoItem) => {
     if (!confirm(`Delete "${video.title}"? This cannot be undone.`)) return;
@@ -163,9 +197,17 @@ const MyVideos = () => {
                 key={video.id}
                 className="glass-card p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
               >
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                  <Video className="w-6 h-6 text-accent" />
-                </div>
+                {thumbnails[video.id] ? (
+                  <img
+                    src={thumbnails[video.id]}
+                    alt={video.title}
+                    className="w-24 h-14 rounded-lg object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-24 h-14 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                    <Video className="w-6 h-6 text-accent" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{video.title}</h3>
                   <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
