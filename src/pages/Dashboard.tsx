@@ -50,13 +50,15 @@ const Dashboard = () => {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("creator_profiles")
-        .select("tier, storage_used")
+        .select("tier, storage_used, username")
         .eq("user_id", user.id)
         .maybeSingle();
       
       if (data) {
         setTier(data.tier as SubscriptionTier);
         setStorageUsed(data.storage_used);
+        setUsername(data.username || "");
+        setUsernameInput(data.username || "");
       }
     };
 
