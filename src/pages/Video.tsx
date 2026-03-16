@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Video = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
   const [video, setVideo] = useState<{
     title: string;
     description: string;
@@ -21,7 +20,6 @@ const Video = () => {
     customWatermarkUrl: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [useCustomWatermark, setUseCustomWatermark] = useState(false);
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -80,26 +78,11 @@ const Video = () => {
         userId: data.user_id,
         customWatermarkUrl,
       });
-      // Auto-enable custom watermark if one exists
-      if (customWatermarkUrl) setUseCustomWatermark(true);
       setLoading(false);
     };
 
     fetchVideo();
   }, [id]);
-
-  const handleToggleWatermark = async (newValue: boolean) => {
-    if (!id) return;
-    const { error } = await supabase
-      .from("videos")
-      .update({ watermarks_enabled: newValue })
-      .eq("id", id);
-    if (!error && video) {
-      setVideo({ ...video, watermarksEnabled: newValue });
-    }
-  };
-
-  const isOwner = !!(user && video && user.id === video.userId);
 
   if (loading) {
     return (
