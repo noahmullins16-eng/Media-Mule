@@ -265,7 +265,26 @@ const Dashboard = () => {
                   Upload Your First File
                 </Button>
               </Link>
+        </div>
+
+        {/* Transaction History */}
+        <div className="glass-card p-6 mt-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-accent" />
+              Transaction History
+            </h2>
+          </div>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Clock className="w-8 h-8 text-muted-foreground" />
             </div>
+            <h3 className="font-semibold mb-1">No transactions yet</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              When buyers purchase your media, transactions will appear here with payment details and download history.
+            </p>
+          </div>
+        </div>
           )}
         </div>
       </main>
