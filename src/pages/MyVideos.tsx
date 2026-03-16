@@ -53,6 +53,15 @@ const MyVideos = () => {
       toast.error("Failed to load videos");
     } else {
       setVideos(data || []);
+      // Generate thumbnails from video files
+      (data || []).forEach(async (v) => {
+        const { data: signedData } = await supabase.storage
+          .from("videos")
+          .createSignedUrl(v.file_path, 3600);
+        if (signedData?.signedUrl) {
+          generateThumbnail(v.id, signedData.signedUrl);
+        }
+      });
     }
     setLoadingVideos(false);
   };
