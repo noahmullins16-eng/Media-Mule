@@ -1,47 +1,63 @@
 import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
-
-// Sample data - in real app this would come from database
-const sampleVideos: Record<string, {
-  title: string;
-  description: string;
-  thumbnail: string;
-  price: number;
-  duration: string;
-  creator: string;
-}> = {
-  "1": {
-    title: "Advanced React Patterns - Complete Masterclass",
-    description: "Master advanced React patterns including compound components, render props, custom hooks, and state machines. This comprehensive course takes you from intermediate to expert level with real-world examples and hands-on projects.",
-    thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=1200&h=675&fit=crop",
-    price: 29.99,
-    duration: "2:45:30",
-    creator: "DevMaster",
-  },
-  "2": {
-    title: "Cinematic Color Grading Tutorial for Filmmakers",
-    description: "Learn professional color grading techniques used in Hollywood productions. From basic color correction to advanced cinematic looks, this tutorial covers everything you need to make your footage look stunning.",
-    thumbnail: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1200&h=675&fit=crop",
-    price: 19.99,
-    duration: "1:32:00",
-    creator: "FilmPro",
-  },
-  "3": {
-    title: "Music Production: From Zero to Hero",
-    description: "Complete music production course covering DAW basics, mixing, mastering, and sound design. Whether you're making beats or full songs, this course has you covered with industry-standard techniques.",
-    thumbnail: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&h=675&fit=crop",
-    price: 49.99,
-    duration: "4:15:00",
-    creator: "BeatMaker",
-  },
-};
+import { supabase } from "@/integrations/supabase/client";
 
 const Video = () => {
   const { id } = useParams<{ id: string }>();
-  const video = id ? sampleVideos[id] : null;
+  const [video, setVideo] = useState<{
+    title: string;
+    description: string;
+    price: number;
+    creator: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!video) {
+  useEffect(() => {
+    if (!id) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    const fetchVideo = async () => {
+      const { data, error } = await supabase
+        .from("videos")
+        .select("title, description, price, user_id")
+        .eq("id", id)
+        .eq("status", "published")
+        .single();
+
+      if (error || !data) {
+        setNotFound(true);
+      } else {
+        setVideo({
+          title: data.title,
+          description: data.description || "",
+          price: Number(data.price),
+          creator: "Creator",
+        });
+      }
+      setLoading(false);
+    };
+
+    fetchVideo();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 pt-24 pb-16 flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </main>
+      </div>
+    );
+  }
+
+  if (notFound || !video) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -57,7 +73,14 @@ const Video = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <VideoPaywall {...video} />
+        <VideoPaywall
+          title={video.title}
+          description={video.description}
+          thumbnail=""
+          price={video.price}
+          duration=""
+          creator={video.creator}
+        />
       </main>
     </div>
   );
