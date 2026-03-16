@@ -81,6 +81,31 @@ const MyVideos = () => {
     }
   };
 
+  const handleCopyLink = (videoId: string) => {
+    const url = `${window.location.origin}/video/${videoId}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Purchase link copied to clipboard!");
+  };
+
+  const handleToggleWatermark = async (video: VideoItem) => {
+    const newValue = !video.watermarks_enabled;
+    const { error } = await supabase
+      .from("videos")
+      .update({ watermarks_enabled: newValue } as any)
+      .eq("id", video.id);
+
+    if (error) {
+      toast.error("Failed to update watermark setting");
+    } else {
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === video.id ? { ...v, watermarks_enabled: newValue } : v
+        )
+      );
+      toast.success(newValue ? "Watermarks enabled" : "Watermarks disabled");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
