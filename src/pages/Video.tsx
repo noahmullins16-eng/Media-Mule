@@ -86,7 +86,7 @@ const Video = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header minimal />
         <main className="container mx-auto px-4 pt-24 pb-16 flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
         </main>
@@ -97,7 +97,7 @@ const Video = () => {
   if (!video) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header minimal />
         <main className="container mx-auto px-4 pt-24 pb-16 text-center">
           <h1 className="mb-4 font-display text-4xl font-bold">Video Not Found</h1>
           <p className="text-muted-foreground">
@@ -110,7 +110,7 @@ const Video = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header minimal />
       <main className="container mx-auto px-4 pt-24 pb-16">
         <VideoPaywall
           {...video}
