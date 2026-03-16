@@ -1,5 +1,5 @@
-import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,37 +9,47 @@ const Video = () => {
   const [video, setVideo] = useState<{
     title: string;
     description: string;
+    thumbnail: string;
     price: number;
+    duration: string;
     creator: string;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (!id) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
     const fetchVideo = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, user_id")
+        .select("title, description, price, thumbnail_url, status")
         .eq("id", id)
-        .eq("status", "published")
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        setNotFound(true);
-      } else {
-        setVideo({
-          title: data.title,
-          description: data.description || "",
-          price: Number(data.price),
-          creator: "Creator",
-        });
+      if (error) {
+        console.error("Error fetching video:", error);
+        setVideo(null);
+        setLoading(false);
+        return;
       }
+
+      if (!data) {
+        setVideo(null);
+        setLoading(false);
+        return;
+      }
+
+      setVideo({
+        title: data.title,
+        description: data.description || "No description provided.",
+        thumbnail: data.thumbnail_url || "/placeholder.svg",
+        price: Number(data.price),
+        duration: data.status === "published" ? "Available now" : "Processing",
+        creator: "Media Mule Creator",
+      });
       setLoading(false);
     };
 
@@ -51,19 +61,21 @@ const Video = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 pt-24 pb-16 flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
         </main>
       </div>
     );
   }
 
-  if (notFound || !video) {
+  if (!video) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 pt-24 pb-16 text-center">
-          <h1 className="font-display text-4xl font-bold mb-4">Video Not Found</h1>
-          <p className="text-muted-foreground">The video you're looking for doesn't exist.</p>
+          <h1 className="mb-4 font-display text-4xl font-bold">Video Not Found</h1>
+          <p className="text-muted-foreground">
+            This video is unavailable or you don&apos;t have access to it.
+          </p>
         </main>
       </div>
     );
@@ -73,14 +85,7 @@ const Video = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <VideoPaywall
-          title={video.title}
-          description={video.description}
-          thumbnail=""
-          price={video.price}
-          duration=""
-          creator={video.creator}
-        />
+        <VideoPaywall {...video} />
       </main>
     </div>
   );
