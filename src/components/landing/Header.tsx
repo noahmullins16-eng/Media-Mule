@@ -24,14 +24,17 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
             <span className="font-display text-xl font-bold">Media Mule Co.</span>
           </Link>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            {minimal ? (
-              <Link to="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+          {minimal ? (
+            <>
+              <Link to="/how-it-works" className="absolute left-1/2 -translate-x-1/2 text-muted-foreground hover:text-foreground transition-colors">
                 How It Works
               </Link>
-            ) : (
-              <>
+              <div />
+            </>
+          ) : (
+            <>
+              {/* Navigation */}
+              <nav className="hidden md:flex items-center gap-8">
                 <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
                   Pricing
                 </Link>
@@ -48,37 +51,35 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
                     </Link>
                   </>
                 )}
-              </>
-            )}
-          </nav>
+              </nav>
 
-          {/* CTA */}
-          {!minimal && (
-            <div className="flex items-center gap-3">
-              {user ? (
-                <>
-                  <span className="hidden sm:inline-flex text-sm text-muted-foreground">
-                    {user.email}
-                  </span>
-                  <Button variant="ghost" onClick={handleSignOut}>
-                    Sign Out
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link to="/auth">
-                    <Button variant="ghost" className="hidden sm:inline-flex">
-                      Sign In
+              {/* CTA */}
+              <div className="flex items-center gap-3">
+                {user ? (
+                  <>
+                    <span className="hidden sm:inline-flex text-sm text-muted-foreground">
+                      {user.email}
+                    </span>
+                    <Button variant="ghost" onClick={handleSignOut}>
+                      Sign Out
                     </Button>
-                  </Link>
-                  <Link to="/upload">
-                    <Button variant="hero" size="sm">
-                      Start Selling
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/auth">
+                      <Button variant="ghost" className="hidden sm:inline-flex">
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link to="/upload">
+                      <Button variant="hero" size="sm">
+                        Start Selling
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
