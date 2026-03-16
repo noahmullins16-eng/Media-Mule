@@ -22,7 +22,7 @@ export const WatermarkUploader = ({ onWatermarkUrl }: WatermarkUploaderProps) =>
         .from("creator_profiles")
         .select("custom_watermark_path")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (data?.custom_watermark_path) {
         const { data: urlData } = supabase.storage

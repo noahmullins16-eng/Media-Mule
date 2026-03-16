@@ -59,7 +59,7 @@ const Video = () => {
         .from("creator_profiles")
         .select("custom_watermark_path")
         .eq("user_id", data.user_id)
-        .single();
+        .maybeSingle();
 
       if (profileData?.custom_watermark_path) {
         const { data: wmUrl } = supabase.storage
