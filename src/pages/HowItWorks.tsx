@@ -1,205 +1,315 @@
 import { Header } from "@/components/landing/Header";
-import { Upload, Link2, CreditCard, Download, Lock, Zap, Shield, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Upload, DollarSign, Link2, Shield, Play, Lock,
+  CreditCard, Download, CheckCircle, Eye, FileVideo
+} from "lucide-react";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.15, duration: 0.6, ease: "easeOut" },
+  }),
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: (i: number) => ({
+    opacity: 1, scale: 1,
+    transition: { delay: 0.3 + i * 0.2, duration: 0.5, ease: "easeOut" },
+  }),
+};
 
 const HowItWorks = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 pt-24 pb-16">
-        {/* Hero Section */}
-        <div className="text-center mb-20 max-w-3xl mx-auto">
-          <h1 className="font-display text-4xl md:text-6xl font-bold mb-6 tracking-tight">
-            Your Work. <span className="gradient-text">Your Terms.</span>
+        {/* Title */}
+        <motion.div
+          className="text-center mb-16 max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h1 className="font-display text-4xl md:text-6xl font-bold mb-4 tracking-tight">
+            Two Sides. <span className="gradient-text">One Link.</span>
           </h1>
-          
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Upload once. Share a link. Get paid before they download. 
-            It's that simple.
+          <p className="text-lg text-muted-foreground">
+            See how creators deliver and buyers receive — seamlessly.
           </p>
+        </motion.div>
+
+        {/* Two-sided split */}
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-3 max-w-6xl mx-auto mb-20">
+          {/* CREATOR SIDE */}
+          <motion.div
+            className="relative"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+          >
+            <div className="glass-card p-6 md:p-8 h-full border-accent/20">
+              {/* Side label */}
+              <motion.div variants={fadeUp} custom={0} className="flex items-center gap-2 mb-8">
+                <div className="w-10 h-10 rounded-xl bg-accent text-accent-foreground flex items-center justify-center">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-display text-xl font-bold">Creator</h2>
+                  <p className="text-xs text-muted-foreground">Your workflow</p>
+                </div>
+              </motion.div>
+
+              {/* Step 1: Upload */}
+              <motion.div variants={scaleIn} custom={0} className="mb-6">
+                <StepCard
+                  step={1}
+                  icon={<FileVideo className="w-5 h-5" />}
+                  title="Upload your video"
+                  accent
+                >
+                  <div className="rounded-xl bg-muted/60 border border-border/50 p-4 mt-3">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                        <Play className="w-4 h-4 text-accent" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-2.5 w-32 rounded-full bg-accent/30" />
+                        <div className="h-2 w-20 rounded-full bg-muted-foreground/20 mt-1.5" />
+                      </div>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-accent/20 overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full bg-accent"
+                        initial={{ width: "0%" }}
+                        whileInView={{ width: "100%" }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.8, duration: 1.5, ease: "easeOut" }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">final_edit_v3.mp4</p>
+                  </div>
+                </StepCard>
+              </motion.div>
+
+              {/* Step 2: Set price */}
+              <motion.div variants={scaleIn} custom={1} className="mb-6">
+                <StepCard
+                  step={2}
+                  icon={<DollarSign className="w-5 h-5" />}
+                  title="Set your price"
+                  accent
+                >
+                  <div className="rounded-xl bg-muted/60 border border-border/50 p-4 mt-3 flex items-center gap-4">
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Price</p>
+                      <div className="flex items-center gap-1 text-2xl font-display font-bold">
+                        <span className="text-muted-foreground">$</span>
+                        <motion.span
+                          className="gradient-text"
+                          initial={{ opacity: 0 }}
+                          whileInView={{ opacity: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 1.2, duration: 0.4 }}
+                        >
+                          250
+                        </motion.span>
+                        <span className="text-xs font-normal text-muted-foreground ml-1">.00</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">
+                      <Shield className="w-3 h-3" />
+                      DRM On
+                    </div>
+                  </div>
+                </StepCard>
+              </motion.div>
+
+              {/* Step 3: Share link */}
+              <motion.div variants={scaleIn} custom={2}>
+                <StepCard
+                  step={3}
+                  icon={<Link2 className="w-5 h-5" />}
+                  title="Send the link"
+                  accent
+                >
+                  <div className="rounded-xl bg-muted/60 border border-border/50 p-3 mt-3 flex items-center gap-2">
+                    <div className="flex-1 truncate text-xs text-muted-foreground font-mono">
+                      mediamule.com/video/aX9k2m
+                    </div>
+                    <motion.div
+                      className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-medium cursor-default"
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      Copied ✓
+                    </motion.div>
+                  </div>
+                </StepCard>
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* BUYER SIDE */}
+          <motion.div
+            className="relative"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+          >
+            <div className="glass-card p-6 md:p-8 h-full">
+              {/* Side label */}
+              <motion.div variants={fadeUp} custom={0} className="flex items-center gap-2 mb-8">
+                <div className="w-10 h-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
+                  <Eye className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-display text-xl font-bold">Buyer</h2>
+                  <p className="text-xs text-muted-foreground">Their experience</p>
+                </div>
+              </motion.div>
+
+              {/* Step 1: Preview */}
+              <motion.div variants={scaleIn} custom={0} className="mb-6">
+                <StepCard
+                  step={1}
+                  icon={<Lock className="w-5 h-5" />}
+                  title="Preview protected video"
+                >
+                  <div className="rounded-xl bg-muted/60 border border-border/50 overflow-hidden mt-3">
+                    <div className="aspect-[16/8] bg-foreground/5 relative flex items-center justify-center">
+                      <Play className="w-8 h-8 text-muted-foreground/40" />
+                      {/* Watermark overlay */}
+                      <div className="absolute inset-0 grid grid-cols-3 grid-rows-2 opacity-[0.08] pointer-events-none">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <div key={i} className="flex items-center justify-center text-foreground text-[10px] font-bold -rotate-12">
+                            MEDIA MULE
+                          </div>
+                        ))}
+                      </div>
+                      <div className="absolute bottom-1.5 right-2 flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                        <Shield className="w-2.5 h-2.5" />
+                        Protected
+                      </div>
+                    </div>
+                  </div>
+                </StepCard>
+              </motion.div>
+
+              {/* Step 2: Pay */}
+              <motion.div variants={scaleIn} custom={1} className="mb-6">
+                <StepCard
+                  step={2}
+                  icon={<CreditCard className="w-5 h-5" />}
+                  title="Pay securely"
+                >
+                  <div className="rounded-xl bg-muted/60 border border-border/50 p-4 mt-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm text-muted-foreground">Total</span>
+                      <span className="font-display font-bold text-lg">$250.00</span>
+                    </div>
+                    <motion.div
+                      className="w-full py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-semibold text-center cursor-default"
+                      initial={{ opacity: 0.6 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 1.4, duration: 0.3 }}
+                    >
+                      Pay Now
+                    </motion.div>
+                  </div>
+                </StepCard>
+              </motion.div>
+
+              {/* Step 3: Download */}
+              <motion.div variants={scaleIn} custom={2}>
+                <StepCard
+                  step={3}
+                  icon={<Download className="w-5 h-5" />}
+                  title="Download full quality"
+                >
+                  <div className="rounded-xl bg-muted/60 border border-border/50 p-4 mt-3 flex items-center gap-3">
+                    <motion.div
+                      className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center"
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 1.6, duration: 0.4, type: "spring" }}
+                    >
+                      <CheckCircle className="w-5 h-5 text-accent" />
+                    </motion.div>
+                    <div>
+                      <p className="text-sm font-medium">Ready to download</p>
+                      <p className="text-xs text-muted-foreground">No watermarks · Full resolution</p>
+                    </div>
+                  </div>
+                </StepCard>
+              </motion.div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Visual Flow */}
-        <div className="relative mb-20">
-          {/* Connection Line */}
-          <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-y-1/2 z-0" />
-          
-          <div className="grid md:grid-cols-4 gap-6 relative z-10">
-            <FlowStep
-              step={1}
-              icon={<Upload className="w-6 h-6" />}
-              title="Upload"
-              description="Drop your finished video and set your price"
-            />
-            <FlowStep
-              step={2}
-              icon={<Link2 className="w-6 h-6" />}
-              title="Share"
-              description="Send the unique link to your client"
-            />
-            <FlowStep
-              step={3}
-              icon={<CreditCard className="w-6 h-6" />}
-              title="Get Paid"
-              description="Client pays securely via Stripe"
-            />
-            <FlowStep
-              step={4}
-              icon={<Download className="w-6 h-6" />}
-              title="Deliver"
-              description="Instant access to download after payment"
-            />
-          </div>
-        </div>
-
-        {/* What Your Client Sees */}
-        <div className="mb-20">
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-10">
-            What Your Client Sees
-          </h2>
-          
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <ClientView
-              icon={<Eye className="w-5 h-5" />}
-              title="Before Payment"
-              items={[
-                "Video preview with watermark",
-                "Your title & description",
-                "Clear pricing",
-                "Secure payment button"
-              ]}
-              variant="locked"
-            />
-            <ClientView
-              icon={<Download className="w-5 h-5" />}
-              title="After Payment"
-              items={[
-                "Full quality download",
-                "No watermarks",
-                "Instant access",
-                "Download receipt"
-              ]}
-              variant="unlocked"
-            />
-          </div>
-        </div>
-
-        {/* Why This Works */}
-        <div className="glass-card p-8 md:p-12 mb-16 max-w-4xl mx-auto">
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-8">
-            Built for Creators
-          </h2>
-          
-          <div className="grid sm:grid-cols-2 gap-6">
-            <BenefitItem
-              icon={<Lock className="w-5 h-5" />}
-              title="Protected Until Paid"
-              description="Your video stays locked until payment clears. No exceptions."
-            />
-            <BenefitItem
-              icon={<Zap className="w-5 h-5" />}
-              title="No More Chasing"
-              description="Stop sending invoices. Payment happens before delivery."
-            />
-            <BenefitItem
-              icon={<Shield className="w-5 h-5" />}
-              title="Secure & Simple"
-              description="Bank-level security. No account needed for your clients."
-            />
-            <BenefitItem
-              icon={<Link2 className="w-5 h-5" />}
-              title="One Link Does It All"
-              description="Preview, pay, and download — all from a single URL."
-            />
-          </div>
-        </div>
+        {/* Connecting line between sides (desktop) */}
+        <motion.div
+          className="hidden lg:flex justify-center -mt-[calc(50%+2.5rem)] mb-[calc(50%-2.5rem)] relative z-20 pointer-events-none"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 1, duration: 0.6 }}
+        >
+        </motion.div>
 
         {/* CTA */}
-        <div className="text-center">
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
           <p className="text-muted-foreground mb-6">Ready to get paid for your work?</p>
           <Link to="/upload">
             <Button variant="hero" size="xl">
               Upload Your First Video
             </Button>
           </Link>
-        </div>
+        </motion.div>
       </main>
     </div>
   );
 };
 
-const FlowStep = ({
+const StepCard = ({
   step,
   icon,
   title,
-  description,
+  accent,
+  children,
 }: {
   step: number;
   icon: React.ReactNode;
   title: string;
-  description: string;
+  accent?: boolean;
+  children?: React.ReactNode;
 }) => (
-  <div className="flex flex-col items-center text-center">
-    <div className="w-14 h-14 rounded-2xl bg-accent text-accent-foreground flex items-center justify-center mb-4 shadow-lg">
-      {icon}
-    </div>
-    <div className="text-xs text-muted-foreground mb-1">Step {step}</div>
-    <h3 className="font-display text-lg font-semibold mb-1">{title}</h3>
-    <p className="text-sm text-muted-foreground">{description}</p>
-  </div>
-);
-
-const ClientView = ({
-  icon,
-  title,
-  items,
-  variant,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  items: string[];
-  variant: "locked" | "unlocked";
-}) => (
-  <div className={`glass-card p-6 ${variant === "unlocked" ? "border-accent/30" : ""}`}>
-    <div className="flex items-center gap-3 mb-4">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-        variant === "unlocked" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+  <div>
+    <div className="flex items-center gap-3">
+      <div className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center ${
+        accent ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"
+      }`}>
+        {step}
+      </div>
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+        accent ? "text-accent" : "text-muted-foreground"
       }`}>
         {icon}
       </div>
-      <h3 className="font-display font-semibold">{title}</h3>
+      <h3 className="font-display font-semibold text-sm">{title}</h3>
     </div>
-    <ul className="space-y-2">
-      {items.map((item, i) => (
-        <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-          <div className={`w-1.5 h-1.5 rounded-full ${
-            variant === "unlocked" ? "bg-accent" : "bg-muted-foreground/50"
-          }`} />
-          {item}
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-const BenefitItem = ({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) => (
-  <div className="flex gap-4">
-    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
-      {icon}
-    </div>
-    <div>
-      <h4 className="font-display font-semibold mb-1">{title}</h4>
-      <p className="text-muted-foreground text-sm">{description}</p>
-    </div>
+    {children}
   </div>
 );
 
