@@ -2,10 +2,11 @@ import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus } from "lucide-react";
+import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus, Video, Image, Package } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
 import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
 import { toast } from "sonner";
+import type { BundleFile } from "@/pages/Video";
 
 interface VideoPaywallProps {
   title: string;
@@ -22,6 +23,7 @@ interface VideoPaywallProps {
   customWatermarkUrl?: string | null;
   useCustomWatermark?: boolean;
   onToggleCustomWatermark?: (newValue: boolean) => void;
+  bundleFiles?: BundleFile[];
 }
 
 export const VideoPaywall = ({
@@ -39,12 +41,17 @@ export const VideoPaywall = ({
   customWatermarkUrl,
   useCustomWatermark = false,
   onToggleCustomWatermark,
+  bundleFiles = [],
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [activeFileIndex, setActiveFileIndex] = useState(0);
 
-  // Generate a unique session fingerprint for forensic watermarking
+  const activeFile = bundleFiles[activeFileIndex];
+  const activeUrl = activeFile?.signedUrl || videoUrl || "";
+  const activeType = activeFile?.file_type || "video";
+
   const sessionId = useMemo(
     () => `MM-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase(),
     []
@@ -78,20 +85,28 @@ export const VideoPaywall = ({
     setIsMuted(!isMuted);
   };
 
+  const switchFile = (index: number) => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+    setActiveFileIndex(index);
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="glass-card overflow-hidden">
-        {/* Video Player / Preview */}
+        {/* Main Player / Preview */}
         <div
           className="relative aspect-video bg-black overflow-hidden select-none"
           onContextMenu={(e) => e.preventDefault()}
           style={{ userSelect: "none", WebkitUserSelect: "none" }}
         >
-          {videoUrl ? (
+          {activeUrl && activeType === "video" ? (
             <>
               <video
                 ref={videoRef}
-                src={videoUrl}
+                src={activeUrl}
                 className="w-full h-full object-contain"
                 muted={isMuted}
                 playsInline
@@ -102,7 +117,6 @@ export const VideoPaywall = ({
                 style={{ pointerEvents: "none" }}
               />
 
-              {/* Protection layers */}
               {watermarksEnabled && (
                 <>
                   <TiledWatermark customImageUrl={useCustomWatermark ? customWatermarkUrl : null} />
@@ -111,7 +125,6 @@ export const VideoPaywall = ({
                 </>
               )}
 
-              {/* Transparent click-capture layer prevents direct video interaction */}
               <div
                 className="absolute inset-0"
                 style={{ zIndex: 25 }}
@@ -119,7 +132,6 @@ export const VideoPaywall = ({
                 onContextMenu={(e) => e.preventDefault()}
               />
 
-              {/* Play / Pause overlay */}
               {!isPlaying && (
                 <div
                   className="absolute inset-0 flex items-center justify-center bg-black/30"
@@ -134,7 +146,6 @@ export const VideoPaywall = ({
                 </div>
               )}
 
-              {/* Controls bar */}
               {isPlaying && (
                 <div
                   className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-2"
@@ -153,15 +164,68 @@ export const VideoPaywall = ({
                 </div>
               )}
             </>
+          ) : activeUrl && activeType === "image" ? (
+            <div className="relative w-full h-full">
+              <img
+                src={activeUrl}
+                alt={title}
+                className="w-full h-full object-contain"
+                onContextMenu={(e) => e.preventDefault()}
+                draggable={false}
+              />
+              {watermarksEnabled && (
+                <>
+                  <TiledWatermark customImageUrl={useCustomWatermark ? customWatermarkUrl : null} />
+                  <MovingWatermark customImageUrl={useCustomWatermark ? customWatermarkUrl : null} />
+                </>
+              )}
+            </div>
           ) : (
             <>
               <img src={thumbnail} alt={title} className="w-full h-full object-cover" />
               <div className="absolute inset-0 backdrop-blur-xl bg-background/60 flex items-center justify-center">
-                <p className="text-muted-foreground">Video preview unavailable</p>
+                <p className="text-muted-foreground">Preview unavailable</p>
               </div>
             </>
           )}
         </div>
+
+        {/* Bundle file thumbnails */}
+        {bundleFiles.length > 1 && (
+          <div className="border-t border-border bg-muted/30 px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="w-4 h-4 text-accent" />
+              <span className="text-sm font-medium">
+                Bundle · {bundleFiles.length} files
+              </span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {bundleFiles.map((bf, index) => (
+                <button
+                  key={bf.id}
+                  onClick={() => switchFile(index)}
+                  className={`shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                    index === activeFileIndex
+                      ? "border-accent ring-2 ring-accent/30"
+                      : "border-border hover:border-accent/50"
+                  }`}
+                >
+                  {bf.file_type === "image" && bf.signedUrl ? (
+                    <img src={bf.signedUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-accent/10 flex items-center justify-center">
+                      {bf.file_type === "video" ? (
+                        <Video className="w-5 h-5 text-accent" />
+                      ) : (
+                        <Image className="w-5 h-5 text-accent" />
+                      )}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Video Info */}
         <div className="p-6 md:p-8">
@@ -179,9 +243,13 @@ export const VideoPaywall = ({
                   <span className="text-sm text-muted-foreground">by {creator}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">{duration}</span>
+                {bundleFiles.length > 1 && (
+                  <span className="text-xs text-muted-foreground">
+                    {bundleFiles.filter(f => f.file_type === "video").length} videos · {bundleFiles.filter(f => f.file_type === "image").length} images
+                  </span>
+                )}
               </div>
 
-              {/* Owner controls */}
               {isOwner && (
                 <div className="mt-4 flex flex-wrap items-center gap-4">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm">
@@ -231,7 +299,6 @@ export const VideoPaywall = ({
                 </div>
               )}
 
-              {/* Protection badge */}
               {!isOwner && (
                 <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-medium">
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -244,7 +311,9 @@ export const VideoPaywall = ({
               <div className="text-4xl font-display font-bold gradient-text mb-2">
                 ${price.toFixed(2)}
               </div>
-              <p className="text-sm text-muted-foreground mb-4">One-time payment</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {bundleFiles.length > 1 ? `${bundleFiles.length} files · One-time payment` : "One-time payment"}
+              </p>
               <Button variant="premium" size="lg" className="w-full gap-2" disabled>
                 <CreditCard className="w-5 h-5" />
                 Coming Soon
