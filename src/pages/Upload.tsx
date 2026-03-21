@@ -11,7 +11,7 @@ const Upload = () => {
             Share Your <span className="gradient-text">Premium Content</span>
           </h1>
           <p className="text-xl text-muted-foreground">
-            Upload your video, set your price, and start earning today.
+            Upload videos & images, set your price, and start earning today.
           </p>
         </div>
         <VideoUploader />
