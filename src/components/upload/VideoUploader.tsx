@@ -6,18 +6,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Upload, Video, DollarSign, X, Check, ShieldCheck } from "lucide-react";
+import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { WatermarkUploader } from "./WatermarkUploader";
 
+interface UploadFile {
+  id: string;
+  file: File;
+  type: "video" | "image";
+}
+
 export const VideoUploader = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dragActive, setDragActive] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<UploadFile[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -45,15 +51,39 @@ export const VideoUploader = () => {
 
   const tierConfig = TIER_CONFIG[tier];
 
-  const validateFileSize = (f: File): boolean => {
+  const getFileType = (file: File): "video" | "image" => {
+    return file.type.startsWith("video/") ? "video" : "image";
+  };
+
+  const validateFile = (f: File): boolean => {
+    if (!f.type.startsWith("video/") && !f.type.startsWith("image/")) {
+      toast.error(`"${f.name}" is not a video or image file`);
+      return false;
+    }
     if (f.size > tierConfig.maxFileSize) {
       toast.error(
-        `File exceeds your ${tierConfig.label} plan limit of ${tierConfig.maxFileSizeLabel}. Upgrade your plan for larger uploads.`
+        `"${f.name}" exceeds your ${tierConfig.label} plan limit of ${tierConfig.maxFileSizeLabel}.`
       );
       return false;
     }
     return true;
   };
+
+  const addFiles = useCallback((newFiles: FileList | File[]) => {
+    const validFiles: UploadFile[] = [];
+    for (const f of Array.from(newFiles)) {
+      if (validateFile(f)) {
+        validFiles.push({
+          id: crypto.randomUUID(),
+          file: f,
+          type: getFileType(f),
+        });
+      }
+    }
+    if (validFiles.length > 0) {
+      setFiles((prev) => [...prev, ...validFiles]);
+    }
+  }, [tierConfig]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -69,28 +99,20 @@ export const VideoUploader = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const droppedFile = e.dataTransfer.files[0];
-      if (!droppedFile.type.startsWith("video/")) {
-        toast.error("Please upload a video file");
-        return;
-      }
-      if (validateFileSize(droppedFile)) {
-        setFile(droppedFile);
-      }
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addFiles(e.dataTransfer.files);
     }
-  }, [tierConfig]);
+  }, [addFiles]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      if (validateFileSize(selectedFile)) {
-        setFile(selectedFile);
-      } else {
-        e.target.value = "";
-      }
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(e.target.files);
+      e.target.value = "";
     }
+  };
+
+  const removeFile = (id: string) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,13 +124,10 @@ export const VideoUploader = () => {
       return;
     }
 
-    if (!file || !title || !price) {
-      toast.error("Please fill in all required fields");
+    if (files.length === 0 || !title || !price) {
+      toast.error("Please fill in all required fields and add at least one file");
       return;
     }
-
-    // Re-validate file size before upload
-    if (!validateFileSize(file)) return;
 
     const priceNum = parseFloat(price);
     if (isNaN(priceNum) || priceNum < 0.99) {
@@ -117,52 +136,85 @@ export const VideoUploader = () => {
     }
 
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(5);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+      // Use the first video file as the main file_path, or first image if no videos
+      const primaryFile = files.find((f) => f.type === "video") || files[0];
+      const primaryExt = primaryFile.file.name.split(".").pop();
+      const primaryPath = `${user.id}/${crypto.randomUUID()}.${primaryExt}`;
 
-      setUploadProgress(20);
-
-      const { error: uploadError } = await supabase.storage
+      // Upload primary file first
+      setUploadProgress(10);
+      const { error: primaryUploadError } = await supabase.storage
         .from("videos")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+        .upload(primaryPath, primaryFile.file, { cacheControl: "3600", upsert: false });
+      if (primaryUploadError) throw primaryUploadError;
 
-      if (uploadError) throw uploadError;
+      setUploadProgress(30);
 
-      setUploadProgress(70);
+      // Create video record
+      const { data: videoRecord, error: dbError } = await supabase
+        .from("videos")
+        .insert({
+          user_id: user.id,
+          title,
+          description: description || null,
+          price: priceNum,
+          file_path: primaryPath,
+          file_size: primaryFile.file.size,
+          status: "published",
+          watermarks_enabled: watermarksEnabled,
+        })
+        .select("id")
+        .single();
 
-      const { error: dbError } = await supabase.from("videos").insert({
-        user_id: user.id,
-        title,
-        description: description || null,
-        price: priceNum,
-        file_path: filePath,
-        file_size: file.size,
-        status: "published",
-        watermarks_enabled: watermarksEnabled,
-      });
+      if (dbError || !videoRecord) throw dbError || new Error("Failed to create video record");
 
-      if (dbError) throw dbError;
+      setUploadProgress(45);
+
+      // Upload all files and create video_files records
+      const totalFiles = files.length;
+      for (let i = 0; i < files.length; i++) {
+        const uploadFile = files[i];
+        let filePath: string;
+
+        if (uploadFile.id === primaryFile.id) {
+          // Primary file already uploaded
+          filePath = primaryPath;
+        } else {
+          const ext = uploadFile.file.name.split(".").pop();
+          filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from("videos")
+            .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
+          if (uploadError) throw uploadError;
+        }
+
+        // Insert into video_files
+        const { error: fileError } = await supabase
+          .from("video_files")
+          .insert({
+            video_id: videoRecord.id,
+            file_path: filePath,
+            file_type: uploadFile.type,
+            file_size: uploadFile.file.size,
+            sort_order: i,
+          });
+        if (fileError) throw fileError;
+
+        setUploadProgress(45 + Math.round(((i + 1) / totalFiles) * 50));
+      }
 
       setUploadProgress(100);
       setUploadComplete(true);
-      toast.success("Video uploaded successfully!");
+      toast.success("Content uploaded successfully!");
     } catch (err: any) {
       console.error("Upload error:", err);
-      toast.error(err.message || "Failed to upload video");
+      toast.error(err.message || "Failed to upload content");
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const removeFile = () => {
-    setFile(null);
-    setUploadComplete(false);
   };
 
   if (uploadComplete) {
@@ -171,13 +223,13 @@ export const VideoUploader = () => {
         <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-6">
           <Check className="w-10 h-10 text-accent" />
         </div>
-        <h2 className="font-display text-2xl font-bold mb-3">Video Uploaded Successfully!</h2>
+        <h2 className="font-display text-2xl font-bold mb-3">Content Uploaded Successfully!</h2>
         <p className="text-muted-foreground mb-6">
-          Your video "{title}" is now live and ready for purchase at ${price}.
+          Your bundle "{title}" with {files.length} file{files.length !== 1 ? "s" : ""} is now live at ${price}.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button variant="hero" onClick={() => {
-            setFile(null);
+            setFiles([]);
             setTitle("");
             setDescription("");
             setPrice("");
@@ -187,7 +239,7 @@ export const VideoUploader = () => {
             Upload Another
           </Button>
           <Button variant="heroOutline" onClick={() => navigate("/my-videos")}>
-            View Your Videos
+            View Your Content
           </Button>
         </div>
       </div>
@@ -196,7 +248,7 @@ export const VideoUploader = () => {
 
   return (
     <form onSubmit={handleSubmit} className="glass-card p-8 max-w-2xl mx-auto">
-      <h2 className="font-display text-2xl font-bold mb-6">Upload Your Video</h2>
+      <h2 className="font-display text-2xl font-bold mb-6">Upload Your Content</h2>
 
       {/* Dropzone */}
       <div
@@ -204,83 +256,100 @@ export const VideoUploader = () => {
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-8 mb-6 transition-all duration-300 ${
+        className={`relative border-2 border-dashed rounded-xl p-8 mb-4 transition-all duration-300 ${
           dragActive
             ? "border-accent bg-accent/5"
-            : file
+            : files.length > 0
             ? "border-accent/50 bg-accent/5"
             : "border-border hover:border-accent/50"
         }`}
       >
-        {file ? (
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-lg bg-accent/10 flex items-center justify-center">
-              <Video className="w-8 h-8 text-accent" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{file.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {(file.size / (1024 * 1024)).toFixed(2)} MB
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={removeFile}
-              className="shrink-0"
-              disabled={isUploading}
-            >
-              <X className="w-5 h-5" />
+        <div className="text-center">
+          <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-lg font-medium mb-2">
+            Drag and drop your videos & images here
+          </p>
+          <p className="text-muted-foreground mb-4">or</p>
+          <label>
+            <input
+              type="file"
+              accept="video/*,image/*"
+              onChange={handleFileChange}
+              className="hidden"
+              multiple
+            />
+            <Button type="button" variant="heroOutline" asChild>
+              <span>Browse Files</span>
             </Button>
-          </div>
-        ) : (
-          <div className="text-center">
-            <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-lg font-medium mb-2">
-              Drag and drop your video here
-            </p>
-            <p className="text-muted-foreground mb-4">or</p>
-            <label>
-              <input
-                type="file"
-                accept="video/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Button type="button" variant="heroOutline" asChild>
-                <span>Browse Files</span>
-              </Button>
-            </label>
-            <p className="text-xs text-muted-foreground mt-3">
-              Max file size: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
-              {tier !== "enterprise" && (
-                <> · <Link to="/pricing" className="text-accent hover:underline">Upgrade for more</Link></>
-              )}
-            </p>
-          </div>
-        )}
+          </label>
+          <p className="text-xs text-muted-foreground mt-3">
+            Videos & images · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
+            {tier !== "enterprise" && (
+              <> · <Link to="/pricing" className="text-accent hover:underline">Upgrade for more</Link></>
+            )}
+          </p>
+        </div>
       </div>
+
+      {/* File List */}
+      {files.length > 0 && (
+        <div className="mb-6 space-y-2">
+          <p className="text-sm font-medium text-muted-foreground mb-2">
+            {files.length} file{files.length !== 1 ? "s" : ""} selected
+          </p>
+          {files.map((uploadFile, index) => (
+            <div
+              key={uploadFile.id}
+              className="flex items-center gap-3 rounded-lg border border-border p-3 bg-background/50"
+            >
+              <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                {uploadFile.type === "video" ? (
+                  <Video className="w-5 h-5 text-accent" />
+                ) : (
+                  <Image className="w-5 h-5 text-accent" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{uploadFile.file.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(uploadFile.file.size / (1024 * 1024)).toFixed(2)} MB · {uploadFile.type}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeFile(uploadFile.id)}
+                className="shrink-0 h-8 w-8"
+                disabled={isUploading}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Upload Progress */}
       {isUploading && (
         <div className="mb-6 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Uploading...</span>
+            <span className="text-muted-foreground">Uploading {files.length} file{files.length !== 1 ? "s" : ""}...</span>
             <span className="text-muted-foreground">{uploadProgress}%</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
         </div>
       )}
 
-      {/* Video Details */}
+      {/* Details */}
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Video Title *</label>
+          <label className="block text-sm font-medium mb-2">Bundle Title *</label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter a catchy title for your video"
+            placeholder="Enter a title for your content bundle"
             className="bg-background/50"
             disabled={isUploading}
             required
@@ -292,7 +361,7 @@ export const VideoUploader = () => {
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Tell viewers what they'll get..."
+            placeholder="Tell buyers what they'll get..."
             className="bg-background/50 min-h-[100px]"
             disabled={isUploading}
           />
@@ -321,7 +390,7 @@ export const VideoUploader = () => {
             <ShieldCheck className="w-5 h-5 text-accent" />
             <div>
               <Label htmlFor="watermarks" className="text-sm font-medium">Watermark Protection</Label>
-              <p className="text-xs text-muted-foreground">Overlay watermarks on the video preview to deter piracy</p>
+              <p className="text-xs text-muted-foreground">Overlay watermarks on video previews to deter piracy</p>
             </div>
           </div>
           <Switch
@@ -343,15 +412,15 @@ export const VideoUploader = () => {
         variant="premium"
         size="xl"
         className="w-full mt-8"
-        disabled={isUploading || !file || !title || !price}
+        disabled={isUploading || files.length === 0 || !title || !price}
       >
         <Upload className="w-5 h-5" />
-        {isUploading ? "Uploading..." : "Upload Video"}
+        {isUploading ? "Uploading..." : `Upload ${files.length > 1 ? "Bundle" : "Content"}`}
       </Button>
 
       {!user && (
         <p className="text-center text-sm text-muted-foreground mt-2">
-          You must be signed in to upload videos.
+          You must be signed in to upload content.
         </p>
       )}
     </form>

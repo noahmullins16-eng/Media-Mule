@@ -4,6 +4,15 @@ import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface BundleFile {
+  id: string;
+  file_path: string;
+  file_type: string;
+  file_size: number | null;
+  sort_order: number;
+  signedUrl?: string;
+}
+
 const Video = () => {
   const { id } = useParams<{ id: string }>();
   const [video, setVideo] = useState<{
@@ -17,6 +26,7 @@ const Video = () => {
     watermarksEnabled: boolean;
     userId: string;
     customWatermarkUrl: string | null;
+    bundleFiles: BundleFile[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,17 +50,37 @@ const Video = () => {
         return;
       }
 
-      let videoUrl = "";
-      if (data.file_path) {
+      // Fetch bundle files
+      const { data: filesData } = await supabase
+        .from("video_files")
+        .select("*")
+        .eq("video_id", id)
+        .order("sort_order", { ascending: true });
+
+      const bundleFiles: BundleFile[] = [];
+      let primaryVideoUrl = "";
+
+      if (filesData && filesData.length > 0) {
+        for (const f of filesData) {
+          const { data: signedData } = await supabase.storage
+            .from("videos")
+            .createSignedUrl(f.file_path, 3600);
+          const bf: BundleFile = { ...f, signedUrl: signedData?.signedUrl || "" };
+          bundleFiles.push(bf);
+          if (!primaryVideoUrl && f.file_type === "video" && signedData?.signedUrl) {
+            primaryVideoUrl = signedData.signedUrl;
+          }
+        }
+      } else if (data.file_path) {
+        // Fallback to legacy single file
         const { data: signedData } = await supabase.storage
           .from("videos")
           .createSignedUrl(data.file_path, 3600);
         if (signedData?.signedUrl) {
-          videoUrl = signedData.signedUrl;
+          primaryVideoUrl = signedData.signedUrl;
         }
       }
 
-      // Fetch creator's custom watermark and username
       let customWatermarkUrl: string | null = null;
       let creatorUsername = "Media Mule Creator";
       const { data: profileData } = await supabase
@@ -59,10 +89,7 @@ const Video = () => {
         .eq("user_id", data.user_id)
         .maybeSingle();
 
-      if (profileData?.username) {
-        creatorUsername = profileData.username;
-      }
-
+      if (profileData?.username) creatorUsername = profileData.username;
       if (profileData?.custom_watermark_path) {
         const { data: wmUrl } = supabase.storage
           .from("watermarks")
@@ -77,10 +104,11 @@ const Video = () => {
         price: Number(data.price),
         duration: data.status === "published" ? "Available now" : "Processing",
         creator: creatorUsername,
-        videoUrl,
+        videoUrl: primaryVideoUrl,
         watermarksEnabled: data.watermarks_enabled !== false,
         userId: data.user_id,
         customWatermarkUrl,
+        bundleFiles,
       });
       setLoading(false);
     };
