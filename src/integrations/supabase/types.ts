@@ -134,6 +134,30 @@ export type Database = {
         }
         Relationships: []
       }
+      media_folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       site_visits: {
         Row: {
           id: string
@@ -241,6 +265,7 @@ export type Database = {
           description: string | null
           file_path: string
           file_size: number | null
+          folder_id: string | null
           id: string
           price: number
           status: string
@@ -255,6 +280,7 @@ export type Database = {
           description?: string | null
           file_path: string
           file_size?: number | null
+          folder_id?: string | null
           id?: string
           price?: number
           status?: string
@@ -269,6 +295,7 @@ export type Database = {
           description?: string | null
           file_path?: string
           file_size?: number | null
+          folder_id?: string | null
           id?: string
           price?: number
           status?: string
@@ -278,7 +305,15 @@ export type Database = {
           user_id?: string
           watermarks_enabled?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "videos_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "media_folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
