@@ -62,14 +62,6 @@ const PricingTier = () => {
   if (!isValidTier || !tier) {
     return <Navigate to="/pricing" replace />;
   }
-    if (!tier.stripePriceId) throw new Error("No price configured");
-    const { data, error } = await supabase.functions.invoke("create-checkout", {
-      body: { priceId: tier.stripePriceId },
-    });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-    return data.clientSecret as string;
-  }, [tier.stripePriceId]);
 
   const handleGetStarted = () => {
     if (!user) {
