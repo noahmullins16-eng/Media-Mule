@@ -7,11 +7,11 @@ export interface TierFeature {
 
 export interface TierConfig {
   label: string;
-  price: number | null; // null = custom pricing
+  price: number | null;
   description: string;
-  maxFileSize: number; // bytes
+  maxFileSize: number;
   maxFileSizeLabel: string;
-  totalStorage: number; // bytes
+  totalStorage: number;
   totalStorageLabel: string;
   devices: number | null;
   transactionFee: string;
@@ -27,7 +27,6 @@ export const STRIPE_PRODUCT_TO_TIER: Record<string, SubscriptionTier> = {
 };
 
 export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
-  // Legacy tiers kept for backward compat
   starter: {
     label: "Basic",
     price: 9,
@@ -39,6 +38,8 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
     devices: 2,
     transactionFee: "3–4%",
     features: [],
+    stripePriceId: null,
+    stripeProductId: null,
   },
   pro: {
     label: "Studio",
@@ -51,8 +52,9 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
     devices: 8,
     transactionFee: "0%",
     features: [],
+    stripePriceId: null,
+    stripeProductId: null,
   },
-  // Active tiers
   basic: {
     label: "Basic",
     price: 9.99,
@@ -63,6 +65,8 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
     totalStorageLabel: "100 GB",
     devices: 2,
     transactionFee: "3–4%",
+    stripePriceId: "price_1TDmIlCrctthKOPTZTDceVU4",
+    stripeProductId: "prod_UCAeNObjQO0JQv",
     features: [
       { text: "100 GB Storage", included: true },
       { text: "2 Devices", included: true },
@@ -83,6 +87,8 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
     totalStorageLabel: "1 TB",
     devices: 8,
     transactionFee: "0%",
+    stripePriceId: "price_1TDmQSCrctthKOPTPFdQ5Yia",
+    stripeProductId: "prod_UCAmyXm7UEWIbZ",
     features: [
       { text: "1 TB Storage", included: true },
       { text: "8 Devices", included: true },
@@ -104,6 +110,8 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
     totalStorageLabel: "100 TB",
     devices: null,
     transactionFee: "Custom",
+    stripePriceId: null,
+    stripeProductId: null,
     features: [
       { text: "Fully custom plan & pricing", included: true },
       { text: "Possibilities are endless", included: true },
@@ -112,5 +120,4 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
   },
 };
 
-/** The active tiers shown on the pricing page (in display order) */
 export const ACTIVE_TIERS: SubscriptionTier[] = ["basic", "studio", "enterprise"];
