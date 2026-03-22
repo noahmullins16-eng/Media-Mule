@@ -68,7 +68,7 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
   studio: {
     label: "Studio",
     price: 19.99,
-    description: "A powerful, all-in-one platform for managing and selling digital content, offering 1TB of storage and access across 8 devices.",
+    description: "",
     maxFileSize: 10 * 1024 * 1024 * 1024,
     maxFileSizeLabel: "10 GB",
     totalStorage: 1024 * 1024 * 1024 * 1024,
