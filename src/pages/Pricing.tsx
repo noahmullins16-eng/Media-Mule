@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Crown, Rocket } from "lucide-react";
+import { Check, Zap, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TIER_CONFIG, ACTIVE_TIERS } from "@/lib/subscription-tiers";
+import studioMuleIcon from "@/assets/studio-mule.png";
 
 const tierIcons = {
   basic: Zap,
-  studio: Crown,
   enterprise: Rocket,
 } as Record<string, typeof Zap>;
 
