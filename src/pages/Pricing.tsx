@@ -100,22 +100,14 @@ const Pricing = () => {
                   ))}
                 </ul>
 
-                {isEnterprise ? (
-                  <a href="mailto:contact@example.com">
-                    <Button variant="heroOutline" className="w-full">
-                      Contact Us
-                    </Button>
-                  </a>
-                ) : (
-                  <Link to="/auth">
-                    <Button
-                      variant={isPopular ? "hero" : "heroOutline"}
-                      className="w-full"
-                    >
-                      Get Started
-                    </Button>
-                  </Link>
-                )}
+                <Link to={`/pricing/${tierKey}`}>
+                  <Button
+                    variant={isPopular ? "hero" : "heroOutline"}
+                    className="w-full"
+                  >
+                    {isEnterprise ? "Contact Us" : "Get Started"}
+                  </Button>
+                </Link>
               </div>
             );
           })}

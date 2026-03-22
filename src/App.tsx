@@ -31,6 +31,7 @@ const AppRoutes = () => {
       <Route path="/my-videos" element={<MyVideos />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/pricing/:tier" element={<PricingTier />} />
       <Route path="/upload" element={<Upload />} />
       <Route path="/video/:id" element={<Video />} />
       <Route path="/preview/:id" element={<VideoPreview />} />
