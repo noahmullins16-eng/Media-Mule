@@ -88,7 +88,13 @@ const PricingTier = () => {
             {/* Tier header */}
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center">
-                <Icon className="w-7 h-7 text-accent" />
+                {tierKey === "studio" ? (
+                  <img src={studioMuleIcon} alt="Studio" className="w-8 h-8 object-contain" />
+                ) : Icon ? (
+                  <Icon className="w-7 h-7 text-accent" />
+                ) : (
+                  <Zap className="w-7 h-7 text-accent" />
+                )}
               </div>
               <div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold">
