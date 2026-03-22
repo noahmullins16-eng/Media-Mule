@@ -1,100 +1,15 @@
 import { useState } from "react";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Crown, Building2, Rocket, Plus } from "lucide-react";
+import { Check, Zap, Crown, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
+import { TIER_CONFIG, ACTIVE_TIERS } from "@/lib/subscription-tiers";
 
-const tiers = [
-  {
-    name: "Starter Creator",
-    price: 9,
-    icon: Zap,
-    description: "Perfect for getting started with media distribution",
-    features: [
-      "1 TB cloud storage",
-      "100 GB maximum file size",
-      "Unlimited downloads for buyers",
-      "Ad-free download pages",
-      "Instant media previews",
-      "Password protected links",
-      "Expiring download links",
-      "Basic download analytics",
-    ],
-    popular: false,
-  },
-  {
-    name: "Creator Pro",
-    price: 19,
-    icon: Crown,
-    description: "For creators ready to scale their distribution",
-    features: [
-      "5 TB cloud storage",
-      "250 GB maximum file size",
-      "Advanced analytics dashboard",
-      "Custom branded download pages",
-      "Download tracking & link analytics",
-      "Priority transfer speeds",
-      "Watermarked file downloads",
-      "Basic anti-piracy protection",
-    ],
-    popular: true,
-  },
-  {
-    name: "Studio Plan",
-    price: 49,
-    icon: Building2,
-    description: "Built for teams and professional studios",
-    features: [
-      "20 TB cloud storage",
-      "1 TB maximum file size",
-      "Global CDN acceleration",
-      "Team collaboration accounts",
-      "Folder sharing for large projects",
-      "Video streaming previews",
-      "Version history for files",
-      "Bulk media distribution tools",
-    ],
-    popular: false,
-  },
-  {
-    name: "Enterprise Mule",
-    price: 149,
-    icon: Rocket,
-    description: "Maximum power for media businesses",
-    features: [
-      "100 TB cloud storage",
-      "5 TB maximum file size",
-      "Dedicated CDN acceleration",
-      "Unlimited team members",
-      "White-label download portals",
-      "Advanced analytics dashboards",
-      "API access for automation",
-      "Enterprise security controls",
-    ],
-    popular: false,
-  },
-];
-
-const addOns = [
-  {
-    name: "Bandwidth Boost",
-    price: 10,
-    period: "/mo",
-    description: "Faster global download speeds in $10/month increments",
-  },
-  {
-    name: "Secure Delivery Pack",
-    price: 7,
-    period: "/mo",
-    description: "Expiring links, self-destruct downloads, and IP restrictions",
-  },
-  {
-    name: "Creator Storefront",
-    price: 12,
-    period: "/mo",
-    description: "Digital product sales pages and integrated checkout",
-  },
-];
+const tierIcons = {
+  basic: Zap,
+  studio: Crown,
+  enterprise: Rocket,
+} as Record<string, typeof Zap>;
 
 const Pricing = () => {
   const [annual, setAnnual] = useState(false);
@@ -131,18 +46,26 @@ const Pricing = () => {
         </div>
 
         {/* Tiers */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
-          {tiers.map((tier) => {
-            const displayPrice = annual ? Math.round(tier.price * 0.8) : tier.price;
-            const Icon = tier.icon;
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-20">
+          {ACTIVE_TIERS.map((tierKey) => {
+            const tier = TIER_CONFIG[tierKey];
+            const Icon = tierIcons[tierKey] || Zap;
+            const isPopular = tierKey === "studio";
+            const isEnterprise = tierKey === "enterprise";
+            const displayPrice = tier.price
+              ? annual
+                ? (tier.price * 0.8).toFixed(2)
+                : tier.price.toFixed(2)
+              : null;
+
             return (
               <div
-                key={tier.name}
+                key={tierKey}
                 className={`glass-card p-6 flex flex-col relative ${
-                  tier.popular ? "border-accent/50 ring-1 ring-accent/20" : ""
+                  isPopular ? "border-accent/50 ring-1 ring-accent/20" : ""
                 }`}
               >
-                {tier.popular && (
+                {isPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-accent text-accent-foreground text-xs font-semibold">
                     Most Popular
                   </div>
@@ -152,59 +75,50 @@ const Pricing = () => {
                   <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
                     <Icon className="w-5 h-5 text-accent" />
                   </div>
-                  <h3 className="font-display font-bold text-lg">{tier.name}</h3>
+                  <h3 className="font-display font-bold text-lg">{tier.label}</h3>
                 </div>
 
                 <p className="text-sm text-muted-foreground mb-5">{tier.description}</p>
 
                 <div className="mb-6">
-                  <span className="font-display text-4xl font-bold">${displayPrice}</span>
-                  <span className="text-muted-foreground text-sm">/month</span>
+                  {displayPrice ? (
+                    <>
+                      <span className="font-display text-4xl font-bold">${displayPrice}</span>
+                      <span className="text-muted-foreground text-sm">/month</span>
+                    </>
+                  ) : (
+                    <span className="font-display text-2xl font-bold">Custom Pricing</span>
+                  )}
                 </div>
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm">
+                    <li key={feature.text} className="flex items-start gap-2 text-sm">
                       <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-                      <span>{feature}</span>
+                      <span>{feature.text}</span>
                     </li>
                   ))}
                 </ul>
 
-                <Link to="/auth">
-                  <Button
-                    variant={tier.popular ? "hero" : "heroOutline"}
-                    className="w-full"
-                  >
-                    Get Started
-                  </Button>
-                </Link>
+                {isEnterprise ? (
+                  <a href="mailto:contact@example.com">
+                    <Button variant="heroOutline" className="w-full">
+                      Contact Us
+                    </Button>
+                  </a>
+                ) : (
+                  <Link to="/auth">
+                    <Button
+                      variant={isPopular ? "hero" : "heroOutline"}
+                      className="w-full"
+                    >
+                      Get Started
+                    </Button>
+                  </Link>
+                )}
               </div>
             );
           })}
-        </div>
-
-        {/* Add-Ons */}
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="font-display text-2xl md:text-3xl font-bold mb-2">Optional Add-Ons</h2>
-            <p className="text-muted-foreground">Enhance any plan with powerful extras</p>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-4">
-            {addOns.map((addon) => (
-              <div key={addon.name} className="glass-card p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Plus className="w-4 h-4 text-accent" />
-                  <h4 className="font-display font-semibold">{addon.name}</h4>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">{addon.description}</p>
-                <span className="font-display font-bold text-lg">
-                  ${addon.price}<span className="text-sm text-muted-foreground font-normal">{addon.period}</span>
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       </main>
     </div>
