@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Crown, Rocket, ArrowLeft } from "lucide-react";
+import { Check, Zap, Crown, Rocket, ArrowLeft, Loader2 } from "lucide-react";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useToast } from "@/hooks/use-toast";
 
 const tierIcons: Record<string, typeof Zap> = {
   basic: Zap,
@@ -23,6 +27,10 @@ const VALID_TIERS = ["basic", "studio", "enterprise"];
 
 const PricingTier = () => {
   const { tier: tierKey } = useParams<{ tier: string }>();
+  const { user } = useAuth();
+  const { subscribed, tier: currentTier, startCheckout, openPortal } = useSubscription();
+  const { toast } = useToast();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   if (!tierKey || !VALID_TIERS.includes(tierKey)) {
     return <Navigate to="/pricing" replace />;
@@ -32,6 +40,25 @@ const PricingTier = () => {
   const Icon = tierIcons[tierKey] || Zap;
   const description = tierDescriptions[tierKey] || "";
   const isEnterprise = tierKey === "enterprise";
+  const isCurrentPlan = subscribed && currentTier === tierKey;
+
+  const handleSubscribe = async () => {
+    if (!user) {
+      window.location.href = "/auth";
+      return;
+    }
+    if (!tier.stripePriceId) return;
+
+    setCheckoutLoading(true);
+    try {
+      await startCheckout(tier.stripePriceId);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      toast({ title: "Checkout Error", description: msg, variant: "destructive" });
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,6 +98,12 @@ const PricingTier = () => {
               </div>
             </div>
 
+            {isCurrentPlan && (
+              <div className="mb-6 rounded-lg border border-accent/50 bg-accent/5 p-3 text-center text-sm font-medium text-accent">
+                ✓ This is your current plan
+              </div>
+            )}
+
             {/* Description */}
             <div className="mb-8">
               {description.split("\n\n").map((paragraph, i) => (
@@ -102,18 +135,35 @@ const PricingTier = () => {
             </div>
 
             {/* CTA */}
-            {isEnterprise ? (
+            {isCurrentPlan ? (
+              <Button
+                variant="heroOutline"
+                size="xl"
+                className="w-full"
+                onClick={() => openPortal()}
+              >
+                Manage Subscription
+              </Button>
+            ) : isEnterprise ? (
               <a href="mailto:contact@example.com" className="block">
                 <Button variant="hero" size="xl" className="w-full">
                   Contact Us
                 </Button>
               </a>
             ) : (
-              <Link to="/auth" className="block">
-                <Button variant="hero" size="xl" className="w-full">
-                  Get Started with {tier.label}
-                </Button>
-              </Link>
+              <Button
+                variant="hero"
+                size="xl"
+                className="w-full"
+                onClick={handleSubscribe}
+                disabled={checkoutLoading}
+              >
+                {checkoutLoading ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                ) : (
+                  `Get Started with ${tier.label}`
+                )}
+              </Button>
             )}
           </div>
         </div>
