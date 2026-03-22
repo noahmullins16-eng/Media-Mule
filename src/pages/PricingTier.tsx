@@ -42,17 +42,26 @@ const PricingTier = () => {
   const { toast } = useToast();
   const [showCheckout, setShowCheckout] = useState(false);
 
-  if (!tierKey || !VALID_TIERS.includes(tierKey)) {
-    return <Navigate to="/pricing" replace />;
-  }
-
-  const tier = TIER_CONFIG[tierKey as SubscriptionTier];
-  const Icon = tierIcons[tierKey] || Zap;
-  const description = tierDescriptions[tierKey] || "";
+  const isValidTier = tierKey && VALID_TIERS.includes(tierKey);
+  const tier = isValidTier ? TIER_CONFIG[tierKey as SubscriptionTier] : null;
+  const Icon = tierKey ? tierIcons[tierKey] || Zap : Zap;
+  const description = tierKey ? tierDescriptions[tierKey] || "" : "";
   const isEnterprise = tierKey === "enterprise";
   const isCurrentPlan = subscribed && currentTier === tierKey;
 
   const fetchClientSecret = useCallback(async () => {
+    if (!tier?.stripePriceId) throw new Error("No price configured");
+    const { data, error } = await supabase.functions.invoke("create-checkout", {
+      body: { priceId: tier.stripePriceId },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data.clientSecret as string;
+  }, [tier?.stripePriceId]);
+
+  if (!isValidTier || !tier) {
+    return <Navigate to="/pricing" replace />;
+  }
     if (!tier.stripePriceId) throw new Error("No price configured");
     const { data, error } = await supabase.functions.invoke("create-checkout", {
       body: { priceId: tier.stripePriceId },
