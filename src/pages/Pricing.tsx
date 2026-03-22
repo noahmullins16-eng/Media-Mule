@@ -78,7 +78,7 @@ const Pricing = () => {
                   <h3 className="font-display font-bold text-lg">{tier.label}</h3>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-5">{tier.description}</p>
+                
 
                 <div className="mb-6">
                   {displayPrice ? (
