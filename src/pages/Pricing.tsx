@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { TIER_CONFIG, ACTIVE_TIERS } from "@/lib/subscription-tiers";
 import studioMuleIcon from "@/assets/studio-mule.png";
 import basicMuleIcon from "@/assets/basic-mule.png";
+import enterpriseMuleIcon from "@/assets/enterprise-mule.png";
 
 const tierIcons = {
   basic: Zap,
@@ -78,6 +79,8 @@ const Pricing = () => {
                       <img src={studioMuleIcon} alt="Studio" className="w-6 h-6 object-contain" />
                     ) : tierKey === "basic" ? (
                       <img src={basicMuleIcon} alt="Basic" className="w-6 h-6 object-contain" />
+                    ) : tierKey === "enterprise" ? (
+                      <img src={enterpriseMuleIcon} alt="Enterprise" className="w-6 h-6 object-contain" />
                     ) : (
                       <Icon className="w-5 h-5 text-accent" />
                     )}
