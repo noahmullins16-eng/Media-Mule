@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,16 @@ import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  EmbeddedCheckoutProvider,
+  EmbeddedCheckout,
+} from "@stripe/react-stripe-js";
+import { supabase } from "@/integrations/supabase/client";
+
+const stripePromise = loadStripe(
+  "pk_live_51TDlwTCrctthKOPTSxaCpNfyW3Yl9VFgB2v2NcfWCsyhfv8h2BdI7pVnUqUxMpR5eGaqxCFO8rLJq7D0T5t2pxEv00eE2OWqDT"
+);
 
 const tierIcons: Record<string, typeof Zap> = {
   basic: Zap,
@@ -28,36 +38,37 @@ const VALID_TIERS = ["basic", "studio", "enterprise"];
 const PricingTier = () => {
   const { tier: tierKey } = useParams<{ tier: string }>();
   const { user } = useAuth();
-  const { subscribed, tier: currentTier, startCheckout, openPortal } = useSubscription();
+  const { subscribed, tier: currentTier, openPortal } = useSubscription();
   const { toast } = useToast();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
 
-  if (!tierKey || !VALID_TIERS.includes(tierKey)) {
-    return <Navigate to="/pricing" replace />;
-  }
-
-  const tier = TIER_CONFIG[tierKey as SubscriptionTier];
-  const Icon = tierIcons[tierKey] || Zap;
-  const description = tierDescriptions[tierKey] || "";
+  const isValidTier = tierKey && VALID_TIERS.includes(tierKey);
+  const tier = isValidTier ? TIER_CONFIG[tierKey as SubscriptionTier] : null;
+  const Icon = tierKey ? tierIcons[tierKey] || Zap : Zap;
+  const description = tierKey ? tierDescriptions[tierKey] || "" : "";
   const isEnterprise = tierKey === "enterprise";
   const isCurrentPlan = subscribed && currentTier === tierKey;
 
-  const handleSubscribe = async () => {
+  const fetchClientSecret = useCallback(async () => {
+    if (!tier?.stripePriceId) throw new Error("No price configured");
+    const { data, error } = await supabase.functions.invoke("create-checkout", {
+      body: { priceId: tier.stripePriceId },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data.clientSecret as string;
+  }, [tier?.stripePriceId]);
+
+  if (!isValidTier || !tier) {
+    return <Navigate to="/pricing" replace />;
+  }
+
+  const handleGetStarted = () => {
     if (!user) {
       window.location.href = "/auth";
       return;
     }
-    if (!tier.stripePriceId) return;
-
-    setCheckoutLoading(true);
-    try {
-      await startCheckout(tier.stripePriceId);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Something went wrong";
-      toast({ title: "Checkout Error", description: msg, variant: "destructive" });
-    } finally {
-      setCheckoutLoading(false);
-    }
+    setShowCheckout(true);
   };
 
   return (
@@ -134,8 +145,20 @@ const PricingTier = () => {
               </ul>
             </div>
 
-            {/* CTA */}
-            {isCurrentPlan ? (
+            {/* CTA / Embedded Checkout */}
+            {showCheckout && tier.stripePriceId ? (
+              <div className="border-t border-border pt-8">
+                <h2 className="font-display font-semibold text-lg mb-4">
+                  Complete your subscription
+                </h2>
+                <EmbeddedCheckoutProvider
+                  stripe={stripePromise}
+                  options={{ fetchClientSecret }}
+                >
+                  <EmbeddedCheckout />
+                </EmbeddedCheckoutProvider>
+              </div>
+            ) : isCurrentPlan ? (
               <Button
                 variant="heroOutline"
                 size="xl"
@@ -155,14 +178,9 @@ const PricingTier = () => {
                 variant="hero"
                 size="xl"
                 className="w-full"
-                onClick={handleSubscribe}
-                disabled={checkoutLoading}
+                onClick={handleGetStarted}
               >
-                {checkoutLoading ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-                ) : (
-                  `Get Started with ${tier.label}`
-                )}
+                Get Started with {tier.label}
               </Button>
             )}
           </div>
