@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Zap, Rocket, ArrowLeft, Loader2 } from "lucide-react";
 import studioMuleIcon from "@/assets/studio-mule.png";
 import basicMuleIcon from "@/assets/basic-mule.png";
+import enterpriseMuleIcon from "@/assets/enterprise-mule.png";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
