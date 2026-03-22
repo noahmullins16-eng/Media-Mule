@@ -5,6 +5,7 @@ import { Check, Zap, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TIER_CONFIG, ACTIVE_TIERS } from "@/lib/subscription-tiers";
 import studioMuleIcon from "@/assets/studio-mule.png";
+import basicMuleIcon from "@/assets/basic-mule.png";
 
 const tierIcons = {
   basic: Zap,
@@ -75,6 +76,8 @@ const Pricing = () => {
                   <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
                     {tierKey === "studio" ? (
                       <img src={studioMuleIcon} alt="Studio" className="w-6 h-6 object-contain" />
+                    ) : tierKey === "basic" ? (
+                      <img src={basicMuleIcon} alt="Basic" className="w-6 h-6 object-contain" />
                     ) : (
                       <Icon className="w-5 h-5 text-accent" />
                     )}
