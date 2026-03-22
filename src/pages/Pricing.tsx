@@ -79,6 +79,8 @@ const Pricing = () => {
                       <img src={studioMuleIcon} alt="Studio" className="w-6 h-6 object-contain" />
                     ) : tierKey === "basic" ? (
                       <img src={basicMuleIcon} alt="Basic" className="w-6 h-6 object-contain" />
+                    ) : tierKey === "enterprise" ? (
+                      <img src={enterpriseMuleIcon} alt="Enterprise" className="w-6 h-6 object-contain" />
                     ) : (
                       <Icon className="w-5 h-5 text-accent" />
                     )}
