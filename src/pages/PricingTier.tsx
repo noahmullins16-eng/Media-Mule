@@ -21,7 +21,6 @@ const stripePromise = loadStripe(
 
 const tierIcons: Record<string, typeof Zap> = {
   basic: Zap,
-  studio: Crown,
   enterprise: Rocket,
 };
 
