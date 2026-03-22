@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import MyVideos from "./pages/MyVideos";
 import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
+import PricingTier from "./pages/PricingTier";
 import Video from "./pages/Video";
 import VideoPreview from "./pages/VideoPreview";
 import HowItWorks from "./pages/HowItWorks";
