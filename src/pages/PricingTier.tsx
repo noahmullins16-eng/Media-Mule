@@ -91,6 +91,8 @@ const PricingTier = () => {
               <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center">
                 {tierKey === "studio" ? (
                   <img src={studioMuleIcon} alt="Studio" className="w-8 h-8 object-contain" />
+                ) : tierKey === "basic" ? (
+                  <img src={basicMuleIcon} alt="Basic" className="w-8 h-8 object-contain" />
                 ) : Icon ? (
                   <Icon className="w-7 h-7 text-accent" />
                 ) : (
