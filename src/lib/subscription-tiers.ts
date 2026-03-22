@@ -47,8 +47,8 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
   // Active tiers
   basic: {
     label: "Basic",
-    price: 9,
-    description: "A streamlined platform for managing and selling digital content, featuring 100GB storage, access on 2 devices, and bulk uploads for efficiency.",
+    price: 9.99,
+    description: "",
     maxFileSize: 2 * 1024 * 1024 * 1024,
     maxFileSizeLabel: "2 GB",
     totalStorage: 100 * 1024 * 1024 * 1024,
