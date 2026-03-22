@@ -47,8 +47,8 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
   // Active tiers
   basic: {
     label: "Basic",
-    price: 9,
-    description: "A streamlined platform for managing and selling digital content, featuring 100GB storage, access on 2 devices, and bulk uploads for efficiency.",
+    price: 9.99,
+    description: "",
     maxFileSize: 2 * 1024 * 1024 * 1024,
     maxFileSizeLabel: "2 GB",
     totalStorage: 100 * 1024 * 1024 * 1024,
@@ -68,7 +68,7 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
   studio: {
     label: "Studio",
     price: 19.99,
-    description: "A powerful, all-in-one platform for managing and selling digital content, offering 1TB of storage and access across 8 devices.",
+    description: "",
     maxFileSize: 10 * 1024 * 1024 * 1024,
     maxFileSizeLabel: "10 GB",
     totalStorage: 1024 * 1024 * 1024 * 1024,
@@ -89,7 +89,7 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
   enterprise: {
     label: "Enterprise",
     price: null,
-    description: "An enterprise-grade solution built for scale, offering advanced customization, premium support, and powerful workflow tools tailored to your business.",
+    description: "",
     maxFileSize: 25 * 1024 * 1024 * 1024,
     maxFileSizeLabel: "25 GB",
     totalStorage: 100 * 1024 * 1024 * 1024 * 1024,
