@@ -16,7 +16,15 @@ export interface TierConfig {
   devices: number | null;
   transactionFee: string;
   features: TierFeature[];
+  stripePriceId: string | null;
+  stripeProductId: string | null;
 }
+
+/** Mapping from Stripe product ID → tier key */
+export const STRIPE_PRODUCT_TO_TIER: Record<string, SubscriptionTier> = {
+  "prod_UCAeNObjQO0JQv": "basic",
+  "prod_UCAmyXm7UEWIbZ": "studio",
+};
 
 export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
   // Legacy tiers kept for backward compat
