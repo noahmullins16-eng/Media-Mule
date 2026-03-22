@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import MyVideos from "./pages/MyVideos";
 import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
+import PricingTier from "./pages/PricingTier";
 import Video from "./pages/Video";
 import VideoPreview from "./pages/VideoPreview";
 import HowItWorks from "./pages/HowItWorks";
@@ -30,6 +31,7 @@ const AppRoutes = () => {
       <Route path="/my-videos" element={<MyVideos />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/pricing/:tier" element={<PricingTier />} />
       <Route path="/upload" element={<Upload />} />
       <Route path="/video/:id" element={<Video />} />
       <Route path="/preview/:id" element={<VideoPreview />} />
