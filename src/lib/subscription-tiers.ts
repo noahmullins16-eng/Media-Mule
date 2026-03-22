@@ -89,7 +89,7 @@ export const TIER_CONFIG: Record<SubscriptionTier, TierConfig> = {
   enterprise: {
     label: "Enterprise",
     price: null,
-    description: "An enterprise-grade solution built for scale, offering advanced customization, premium support, and powerful workflow tools tailored to your business.",
+    description: "",
     maxFileSize: 25 * 1024 * 1024 * 1024,
     maxFileSizeLabel: "25 GB",
     totalStorage: 100 * 1024 * 1024 * 1024 * 1024,
