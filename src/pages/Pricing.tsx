@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Crown, Rocket } from "lucide-react";
+import { Check, Zap, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TIER_CONFIG, ACTIVE_TIERS } from "@/lib/subscription-tiers";
+import studioMuleIcon from "@/assets/studio-mule.png";
 
 const tierIcons = {
   basic: Zap,
-  studio: Crown,
   enterprise: Rocket,
 } as Record<string, typeof Zap>;
 
@@ -73,7 +73,11 @@ const Pricing = () => {
 
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-accent" />
+                    {tierKey === "studio" ? (
+                      <img src={studioMuleIcon} alt="Studio" className="w-6 h-6 object-contain" />
+                    ) : (
+                      <Icon className="w-5 h-5 text-accent" />
+                    )}
                   </div>
                   <h3 className="font-display font-bold text-lg">{tier.label}</h3>
                 </div>

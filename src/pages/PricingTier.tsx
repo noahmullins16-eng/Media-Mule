@@ -2,7 +2,8 @@ import { useState, useCallback } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Crown, Rocket, ArrowLeft, Loader2 } from "lucide-react";
+import { Check, Zap, Rocket, ArrowLeft, Loader2 } from "lucide-react";
+import studioMuleIcon from "@/assets/studio-mule.png";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -20,7 +21,6 @@ const stripePromise = loadStripe(
 
 const tierIcons: Record<string, typeof Zap> = {
   basic: Zap,
-  studio: Crown,
   enterprise: Rocket,
 };
 
@@ -44,7 +44,7 @@ const PricingTier = () => {
 
   const isValidTier = tierKey && VALID_TIERS.includes(tierKey);
   const tier = isValidTier ? TIER_CONFIG[tierKey as SubscriptionTier] : null;
-  const Icon = tierKey ? tierIcons[tierKey] || Zap : Zap;
+  const Icon = tierKey ? tierIcons[tierKey] : undefined;
   const description = tierKey ? tierDescriptions[tierKey] || "" : "";
   const isEnterprise = tierKey === "enterprise";
   const isCurrentPlan = subscribed && currentTier === tierKey;
@@ -88,7 +88,13 @@ const PricingTier = () => {
             {/* Tier header */}
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center">
-                <Icon className="w-7 h-7 text-accent" />
+                {tierKey === "studio" ? (
+                  <img src={studioMuleIcon} alt="Studio" className="w-8 h-8 object-contain" />
+                ) : Icon ? (
+                  <Icon className="w-7 h-7 text-accent" />
+                ) : (
+                  <Zap className="w-7 h-7 text-accent" />
+                )}
               </div>
               <div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold">
