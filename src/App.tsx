@@ -50,11 +50,9 @@ const App = () => (
       <AuthProvider>
         <Toaster />
         <Sonner />
-        <SitePasswordGate>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </SitePasswordGate>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
