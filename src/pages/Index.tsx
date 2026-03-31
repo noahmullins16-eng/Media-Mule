@@ -242,7 +242,7 @@ const Index = () => {
         <div className="container px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <img src={logo} alt="Media Mule Co." className="w-6 h-6 object-contain" />
+              <img src={logoFull} alt="Media Mule" className="h-8 object-contain" />
               <span className="text-sm text-muted-foreground">© 2026 Media Mule Co. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-6">
