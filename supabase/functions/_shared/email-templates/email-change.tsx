@@ -85,9 +85,9 @@ const text = {
   lineHeight: '1.6',
   margin: '0 0 16px',
 }
-const link = { color: 'hsl(25, 95%, 53%)', textDecoration: 'underline' }
+const link = { color: 'hsl(193, 72%, 64%)', textDecoration: 'underline' }
 const button = {
-  backgroundColor: 'hsl(25, 95%, 53%)',
+  backgroundColor: 'hsl(193, 72%, 64%)',
   color: '#ffffff',
   fontSize: '14px',
   fontWeight: '600' as const,
@@ -96,4 +96,4 @@ const button = {
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
-const footerLink = { color: 'hsl(25, 95%, 53%)', textDecoration: 'none' }
+const footerLink = { color: 'hsl(193, 72%, 64%)', textDecoration: 'none' }
