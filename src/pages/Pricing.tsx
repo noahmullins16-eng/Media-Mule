@@ -1,17 +1,10 @@
 import { useState } from "react";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Rocket } from "lucide-react";
+import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TIER_CONFIG, ACTIVE_TIERS } from "@/lib/subscription-tiers";
-import studioMuleIcon from "@/assets/studio-mule.png";
-import basicMuleIcon from "@/assets/basic-mule.png";
-import enterpriseMuleIcon from "@/assets/enterprise-mule.png";
 
-const tierIcons = {
-  basic: Zap,
-  enterprise: Rocket,
-} as Record<string, typeof Zap>;
 
 const Pricing = () => {
   const [annual, setAnnual] = useState(false);
@@ -51,7 +44,6 @@ const Pricing = () => {
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-20">
           {ACTIVE_TIERS.map((tierKey) => {
             const tier = TIER_CONFIG[tierKey];
-            const Icon = tierIcons[tierKey] || Zap;
             const isPopular = tierKey === "studio";
             const isEnterprise = tierKey === "enterprise";
             const displayPrice = tier.price
@@ -73,18 +65,7 @@ const Pricing = () => {
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                    {tierKey === "studio" ? (
-                      <img src={studioMuleIcon} alt="Studio" className="w-6 h-6 object-contain" />
-                    ) : tierKey === "basic" ? (
-                      <img src={basicMuleIcon} alt="Basic" className="w-6 h-6 object-contain" />
-                    ) : tierKey === "enterprise" ? (
-                      <img src={enterpriseMuleIcon} alt="Enterprise" className="w-6 h-6 object-contain" />
-                    ) : (
-                      <Icon className="w-5 h-5 text-accent" />
-                    )}
-                  </div>
+                <div className="mb-4">
                   <h3 className="font-display font-bold text-lg">{tier.label}</h3>
                 </div>
 

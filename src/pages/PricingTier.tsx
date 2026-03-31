@@ -2,10 +2,7 @@ import { useState, useCallback } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Rocket, ArrowLeft, Loader2 } from "lucide-react";
-import studioMuleIcon from "@/assets/studio-mule.png";
-import basicMuleIcon from "@/assets/basic-mule.png";
-import enterpriseMuleIcon from "@/assets/enterprise-mule.png";
+import { Check, ArrowLeft, Loader2 } from "lucide-react";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -21,10 +18,6 @@ const stripePromise = loadStripe(
   "pk_live_51TDlwTCrctthKOPTSxaCpNfyW3Yl9VFgB2v2NcfWCsyhfv8h2BdI7pVnUqUxMpR5eGaqxCFO8rLJq7D0T5t2pxEv00eE2OWqDT"
 );
 
-const tierIcons: Record<string, typeof Zap> = {
-  basic: Zap,
-  enterprise: Rocket,
-};
 
 const tierDescriptions: Record<string, string> = {
   basic:
@@ -46,7 +39,6 @@ const PricingTier = () => {
 
   const isValidTier = tierKey && VALID_TIERS.includes(tierKey);
   const tier = isValidTier ? TIER_CONFIG[tierKey as SubscriptionTier] : null;
-  const Icon = tierKey ? tierIcons[tierKey] : undefined;
   const description = tierKey ? tierDescriptions[tierKey] || "" : "";
   const isEnterprise = tierKey === "enterprise";
   const isCurrentPlan = subscribed && currentTier === tierKey;
@@ -89,19 +81,6 @@ const PricingTier = () => {
           <div className="glass-card p-8 md:p-12">
             {/* Tier header */}
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center">
-                {tierKey === "studio" ? (
-                  <img src={studioMuleIcon} alt="Studio" className="w-8 h-8 object-contain" />
-                ) : tierKey === "basic" ? (
-                  <img src={basicMuleIcon} alt="Basic" className="w-8 h-8 object-contain" />
-                ) : tierKey === "enterprise" ? (
-                  <img src={enterpriseMuleIcon} alt="Enterprise" className="w-8 h-8 object-contain" />
-                ) : Icon ? (
-                  <Icon className="w-7 h-7 text-accent" />
-                ) : (
-                  <Zap className="w-7 h-7 text-accent" />
-                )}
-              </div>
               <div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold">
                   {tier.label}
