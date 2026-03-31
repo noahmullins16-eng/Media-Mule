@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [tier, setTier] = useState<SubscriptionTier>("starter");
   const [storageUsed, setStorageUsed] = useState(0);
   const [videoCount, setVideoCount] = useState(0);
@@ -38,6 +39,8 @@ const Dashboard = () => {
   const [editingUsername, setEditingUsername] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
   const [savingUsername, setSavingUsername] = useState(false);
+  const [connectOnboarded, setConnectOnboarded] = useState<boolean | null>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
