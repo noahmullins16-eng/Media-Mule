@@ -39,7 +39,7 @@ const PricingTier = () => {
 
   const isValidTier = tierKey && VALID_TIERS.includes(tierKey);
   const tier = isValidTier ? TIER_CONFIG[tierKey as SubscriptionTier] : null;
-  const Icon = tierKey ? tierIcons[tierKey] : undefined;
+  const description = tierKey ? tierDescriptions[tierKey] || "" : "";
   const description = tierKey ? tierDescriptions[tierKey] || "" : "";
   const isEnterprise = tierKey === "enterprise";
   const isCurrentPlan = subscribed && currentTier === tierKey;
