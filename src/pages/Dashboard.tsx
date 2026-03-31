@@ -204,7 +204,46 @@ const Dashboard = () => {
           </Link>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stripe Connect Banner */}
+        {connectOnboarded === false && (
+          <div className="glass-card p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-accent/20 bg-accent/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <p className="font-display font-semibold">Set Up Payments</p>
+                <p className="text-sm text-muted-foreground">
+                  Connect your bank account to receive payments from buyers
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="hero"
+              size="sm"
+              disabled={connectLoading}
+              onClick={async () => {
+                setConnectLoading(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("connect-onboarding");
+                  if (error) throw error;
+                  if (data?.url) {
+                    window.location.href = data.url;
+                  } else if (data?.onboarded) {
+                    setConnectOnboarded(true);
+                    toast.success("Payments already set up!");
+                  }
+                } catch (err) {
+                  toast.error("Failed to start payment setup");
+                  console.error(err);
+                }
+                setConnectLoading(false);
+              }}
+            >
+              {connectLoading ? "Loading..." : "Set Up Now"}
+            </Button>
+          </div>
+        )}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon;

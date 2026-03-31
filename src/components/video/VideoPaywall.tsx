@@ -44,11 +44,13 @@ export const VideoPaywall = ({
   useCustomWatermark = false,
   onToggleCustomWatermark,
   bundleFiles = [],
+  sold = false,
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [activeFileIndex, setActiveFileIndex] = useState(0);
+  const [purchasing, setPurchasing] = useState(false);
 
   const activeFile = bundleFiles[activeFileIndex];
   const activeUrl = activeFile?.signedUrl || videoUrl || "";
