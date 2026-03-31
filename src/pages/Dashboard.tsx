@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
+import { toast } from "sonner";
 import {
   Upload,
   Video,
