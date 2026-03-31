@@ -49,12 +49,18 @@ const Dashboard = () => {
   }, [user, loading, navigate]);
 
   useEffect(() => {
+    if (searchParams.get("connect") === "success") {
+      toast.success("Stripe Connect setup complete! You can now receive payments.");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (!user) return;
     
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("creator_profiles")
-        .select("tier, storage_used, username")
+        .select("tier, storage_used, username, stripe_account_id")
         .eq("user_id", user.id)
         .maybeSingle();
       
@@ -63,6 +69,7 @@ const Dashboard = () => {
         setStorageUsed(data.storage_used);
         setUsername(data.username || "");
         setUsernameInput(data.username || "");
+        setConnectOnboarded(!!data.stripe_account_id);
       }
     };
 
@@ -82,6 +89,13 @@ const Dashboard = () => {
     
     fetchProfile();
     fetchVideos();
+
+    // Check Connect onboarding status
+    const checkConnect = async () => {
+      const { data } = await supabase.functions.invoke("connect-onboarding");
+      if (data?.onboarded) setConnectOnboarded(true);
+    };
+    checkConnect();
   }, [user]);
 
   if (loading) {
