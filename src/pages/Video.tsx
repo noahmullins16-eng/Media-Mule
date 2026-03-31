@@ -152,6 +152,7 @@ const Video = () => {
           videoId={id}
           isOwner={false}
           useCustomWatermark={!!video.customWatermarkUrl}
+          sold={video.sold}
         />
       </main>
     </div>
