@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { BundleFile } from "@/pages/Video";
 
 interface VideoPaywallProps {
+  sold?: boolean;
   title: string;
   description: string;
   thumbnail: string;
