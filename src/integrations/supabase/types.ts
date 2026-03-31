@@ -268,6 +268,7 @@ export type Database = {
           folder_id: string | null
           id: string
           price: number
+          sold: boolean
           status: string
           thumbnail_url: string | null
           title: string
@@ -283,6 +284,7 @@ export type Database = {
           folder_id?: string | null
           id?: string
           price?: number
+          sold?: boolean
           status?: string
           thumbnail_url?: string | null
           title: string
@@ -298,6 +300,7 @@ export type Database = {
           folder_id?: string | null
           id?: string
           price?: number
+          sold?: boolean
           status?: string
           thumbnail_url?: string | null
           title?: string
