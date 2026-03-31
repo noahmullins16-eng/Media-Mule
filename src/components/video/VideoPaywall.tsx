@@ -318,13 +318,53 @@ export const VideoPaywall = ({
               <p className="text-sm text-muted-foreground mb-4">
                 {bundleFiles.length > 1 ? `${bundleFiles.length} files · One-time payment` : "One-time payment"}
               </p>
-              <Button variant="premium" size="lg" className="w-full gap-2" disabled>
-                <CreditCard className="w-5 h-5" />
-                Coming Soon
-              </Button>
-              <p className="text-xs text-muted-foreground mt-3">
-                Payment integration coming soon
-              </p>
+              {sold ? (
+                <>
+                  <Button variant="premium" size="lg" className="w-full gap-2" disabled>
+                    <ShieldCheck className="w-5 h-5" />
+                    Sold
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    This content has been purchased
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="premium"
+                    size="lg"
+                    className="w-full gap-2"
+                    disabled={purchasing || isOwner}
+                    onClick={async () => {
+                      if (!videoId) return;
+                      setPurchasing(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("create-payment", {
+                          body: { videoId },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        if (data?.url) {
+                          window.location.href = data.url;
+                        }
+                      } catch (err: any) {
+                        toast.error(err.message || "Failed to start purchase");
+                      }
+                      setPurchasing(false);
+                    }}
+                  >
+                    {purchasing ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <CreditCard className="w-5 h-5" />
+                    )}
+                    {isOwner ? "Your Content" : purchasing ? "Processing..." : "Purchase Now"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Secure payment via Stripe
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
