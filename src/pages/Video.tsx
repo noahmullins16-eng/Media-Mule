@@ -110,6 +110,7 @@ const Video = () => {
         userId: data.user_id,
         customWatermarkUrl,
         bundleFiles,
+        sold: data.sold ?? false,
       });
       setLoading(false);
     };
