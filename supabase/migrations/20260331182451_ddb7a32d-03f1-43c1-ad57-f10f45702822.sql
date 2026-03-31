@@ -1,0 +1,1 @@
+ALTER TABLE public.creator_profiles ALTER COLUMN tier SET DEFAULT 'starter'::subscription_tier;
