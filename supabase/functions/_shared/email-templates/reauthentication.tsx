@@ -70,4 +70,4 @@ const codeStyle = {
   margin: '0 0 30px',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
-const footerLink = { color: 'hsl(25, 95%, 53%)', textDecoration: 'none' }
+const footerLink = { color: 'hsl(193, 72%, 64%)', textDecoration: 'none' }

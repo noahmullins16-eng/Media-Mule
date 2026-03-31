@@ -17,7 +17,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 10%;
 
-    --primary: 25 95% 53%;
+    --primary: 193 72% 64%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 15% 92%;
@@ -26,8 +26,8 @@
     --muted: 220 15% 94%;
     --muted-foreground: 220 10% 40%;
 
-    --accent: 25 95% 53%;
-    --accent-secondary: 35 95% 55%;
+    --accent: 193 72% 64%;
+    --accent-secondary: 203 72% 58%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -35,26 +35,26 @@
 
     --border: 220 15% 88%;
     --input: 220 15% 88%;
-    --ring: 25 95% 53%;
+    --ring: 193 72% 64%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(25, 95%, 53%), hsl(35, 95%, 55%));
-    --gradient-hero: linear-gradient(135deg, hsl(210, 40%, 98%) 0%, hsl(30, 30%, 96%) 50%, hsl(210, 40%, 98%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(30, 20%, 97%) 100%);
-    --gradient-glow: radial-gradient(ellipse at center, hsl(25, 95%, 53%, 0.1) 0%, transparent 70%);
+    --gradient-primary: linear-gradient(135deg, hsl(193, 72%, 64%), hsl(203, 72%, 58%));
+    --gradient-hero: linear-gradient(135deg, hsl(210, 40%, 98%) 0%, hsl(193, 30%, 96%) 50%, hsl(210, 40%, 98%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(193, 20%, 97%) 100%);
+    --gradient-glow: radial-gradient(ellipse at center, hsl(193, 72%, 64%, 0.1) 0%, transparent 70%);
 
-    --shadow-glow: 0 0 60px -15px hsl(25, 95%, 53%, 0.3);
+    --shadow-glow: 0 0 60px -15px hsl(193, 72%, 64%, 0.3);
     --shadow-card: 0 8px 32px -8px hsl(220, 20%, 10%, 0.1);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 20% 25%;
-    --sidebar-primary: 25 95% 53%;
+    --sidebar-primary: 193 72% 64%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 15% 94%;
     --sidebar-accent-foreground: 220 20% 10%;
     --sidebar-border: 220 15% 88%;
-    --sidebar-ring: 25 95% 53%;
+    --sidebar-ring: 193 72% 64%;
   }
 
   .dark {
