@@ -27,6 +27,7 @@ const Video = () => {
     userId: string;
     customWatermarkUrl: string | null;
     bundleFiles: BundleFile[];
+    sold: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
