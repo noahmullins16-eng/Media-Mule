@@ -5,10 +5,6 @@ import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TIER_CONFIG, ACTIVE_TIERS } from "@/lib/subscription-tiers";
 
-const tierIcons = {
-  basic: Zap,
-  enterprise: Rocket,
-} as Record<string, typeof Zap>;
 
 const Pricing = () => {
   const [annual, setAnnual] = useState(false);
