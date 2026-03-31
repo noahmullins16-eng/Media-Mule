@@ -52,9 +52,8 @@ const Index = () => {
       <header className="relative z-50 w-full">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Media Mule Co." className="w-10 h-10 object-contain" />
-              <span className="font-display text-xl font-bold tracking-tight">Media Mule Co.</span>
+            <div className="flex items-center">
+              <img src={logoFull} alt="Media Mule" className="h-16 object-contain" />
             </div>
             <nav className="hidden md:flex items-center gap-8">
               <Link to="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
