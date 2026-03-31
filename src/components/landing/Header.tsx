@@ -19,7 +19,7 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
             <img 
               src={logoFull} 
               alt="Media Mule" 
-              className="h-10 object-contain"
+              className="h-12 object-contain"
             />
           </Link>
 
