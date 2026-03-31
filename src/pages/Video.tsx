@@ -27,6 +27,7 @@ const Video = () => {
     userId: string;
     customWatermarkUrl: string | null;
     bundleFiles: BundleFile[];
+    sold: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +40,7 @@ const Video = () => {
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id")
+        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id, sold")
         .eq("id", id)
         .maybeSingle();
 
@@ -109,6 +110,7 @@ const Video = () => {
         userId: data.user_id,
         customWatermarkUrl,
         bundleFiles,
+        sold: data.sold ?? false,
       });
       setLoading(false);
     };
@@ -150,6 +152,7 @@ const Video = () => {
           videoId={id}
           isOwner={false}
           useCustomWatermark={!!video.customWatermarkUrl}
+          sold={video.sold}
         />
       </main>
     </div>

@@ -2,13 +2,15 @@ import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus, Video, Image, Package } from "lucide-react";
+import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus, Video, Image, Package, Loader2 } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
 import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import type { BundleFile } from "@/pages/Video";
 
 interface VideoPaywallProps {
+  sold?: boolean;
   title: string;
   description: string;
   thumbnail: string;
@@ -42,11 +44,13 @@ export const VideoPaywall = ({
   useCustomWatermark = false,
   onToggleCustomWatermark,
   bundleFiles = [],
+  sold = false,
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [activeFileIndex, setActiveFileIndex] = useState(0);
+  const [purchasing, setPurchasing] = useState(false);
 
   const activeFile = bundleFiles[activeFileIndex];
   const activeUrl = activeFile?.signedUrl || videoUrl || "";
@@ -314,13 +318,53 @@ export const VideoPaywall = ({
               <p className="text-sm text-muted-foreground mb-4">
                 {bundleFiles.length > 1 ? `${bundleFiles.length} files · One-time payment` : "One-time payment"}
               </p>
-              <Button variant="premium" size="lg" className="w-full gap-2" disabled>
-                <CreditCard className="w-5 h-5" />
-                Coming Soon
-              </Button>
-              <p className="text-xs text-muted-foreground mt-3">
-                Payment integration coming soon
-              </p>
+              {sold ? (
+                <>
+                  <Button variant="premium" size="lg" className="w-full gap-2" disabled>
+                    <ShieldCheck className="w-5 h-5" />
+                    Sold
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    This content has been purchased
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="premium"
+                    size="lg"
+                    className="w-full gap-2"
+                    disabled={purchasing || isOwner}
+                    onClick={async () => {
+                      if (!videoId) return;
+                      setPurchasing(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("create-payment", {
+                          body: { videoId },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        if (data?.url) {
+                          window.location.href = data.url;
+                        }
+                      } catch (err: any) {
+                        toast.error(err.message || "Failed to start purchase");
+                      }
+                      setPurchasing(false);
+                    }}
+                  >
+                    {purchasing ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <CreditCard className="w-5 h-5" />
+                    )}
+                    {isOwner ? "Your Content" : purchasing ? "Processing..." : "Purchase Now"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Secure payment via Stripe
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>

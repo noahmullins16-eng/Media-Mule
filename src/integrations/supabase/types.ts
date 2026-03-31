@@ -21,6 +21,7 @@ export type Database = {
           custom_watermark_path: string | null
           id: string
           storage_used: number
+          stripe_account_id: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string
           user_id: string
@@ -32,6 +33,7 @@ export type Database = {
           custom_watermark_path?: string | null
           id?: string
           storage_used?: number
+          stripe_account_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id: string
@@ -43,6 +45,7 @@ export type Database = {
           custom_watermark_path?: string | null
           id?: string
           storage_used?: number
+          stripe_account_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id?: string
