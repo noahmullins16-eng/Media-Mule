@@ -18,10 +18,6 @@ const stripePromise = loadStripe(
   "pk_live_51TDlwTCrctthKOPTSxaCpNfyW3Yl9VFgB2v2NcfWCsyhfv8h2BdI7pVnUqUxMpR5eGaqxCFO8rLJq7D0T5t2pxEv00eE2OWqDT"
 );
 
-const tierIcons: Record<string, typeof Zap> = {
-  basic: Zap,
-  enterprise: Rocket,
-};
 
 const tierDescriptions: Record<string, string> = {
   basic:
