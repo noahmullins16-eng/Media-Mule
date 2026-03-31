@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       creator_profiles: {
         Row: {
+          accumulated_fees: number
           created_at: string
           custom_watermark_path: string | null
           id: string
@@ -26,6 +27,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          accumulated_fees?: number
           created_at?: string
           custom_watermark_path?: string | null
           id?: string
@@ -36,6 +38,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          accumulated_fees?: number
           created_at?: string
           custom_watermark_path?: string | null
           id?: string
@@ -131,6 +134,33 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      fee_upgrades: {
+        Row: {
+          accumulated_fees_at_grant: number
+          created_at: string
+          expires_at: string
+          granted_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          accumulated_fees_at_grant?: number
+          created_at?: string
+          expires_at: string
+          granted_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          accumulated_fees_at_grant?: number
+          created_at?: string
+          expires_at?: string
+          granted_at?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
