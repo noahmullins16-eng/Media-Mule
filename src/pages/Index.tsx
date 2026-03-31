@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, Play, DollarSign, Shield, Zap, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import logo from "@/assets/logo.png";
+import logoFull from "@/assets/logo-full.png";
 import { motion } from "framer-motion";
 
 const Index = () => {
@@ -52,9 +52,8 @@ const Index = () => {
       <header className="relative z-50 w-full">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Media Mule Co." className="w-10 h-10 object-contain" />
-              <span className="font-display text-xl font-bold tracking-tight">Media Mule Co.</span>
+            <div className="flex items-center">
+              <img src={logoFull} alt="Media Mule" className="h-16 object-contain" />
             </div>
             <nav className="hidden md:flex items-center gap-8">
               <Link to="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
@@ -243,7 +242,7 @@ const Index = () => {
         <div className="container px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <img src={logo} alt="Media Mule Co." className="w-6 h-6 object-contain" />
+              <img src={logoFull} alt="Media Mule" className="h-8 object-contain" />
               <span className="text-sm text-muted-foreground">© 2026 Media Mule Co. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-6">
