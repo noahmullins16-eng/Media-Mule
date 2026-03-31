@@ -15,13 +15,12 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to="/" className="flex items-center group">
             <img 
-              src={logo} 
-              alt="Media Mule Co. Logo" 
-              className="w-10 h-10 object-contain"
+              src={logoFull} 
+              alt="Media Mule" 
+              className="h-10 object-contain"
             />
-            <span className="font-display text-xl font-bold">Media Mule Co.</span>
           </Link>
 
           {minimal ? (
