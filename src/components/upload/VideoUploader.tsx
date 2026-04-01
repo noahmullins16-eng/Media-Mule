@@ -237,6 +237,7 @@ export const VideoUploader = () => {
             setPrice("");
             setUploadComplete(false);
             setUploadProgress(0);
+            setFolderId(null);
           }}>
             Upload Another
           </Button>
