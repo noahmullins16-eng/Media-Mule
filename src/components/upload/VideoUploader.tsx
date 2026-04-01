@@ -390,7 +390,8 @@ export const VideoUploader = () => {
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium mb-2">Price (USD) *</label>
+          <label className="block text-sm font-medium mb-2">Price (USD)</label>
+          <p className="text-xs text-muted-foreground mb-2">Leave empty for storage only (not for sale)</p>
           <div className="relative">
             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
@@ -402,7 +403,6 @@ export const VideoUploader = () => {
               placeholder="9.99"
               className="bg-background/50 pl-10"
               disabled={isUploading}
-              required
             />
           </div>
         </div>
