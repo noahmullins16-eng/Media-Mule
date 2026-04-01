@@ -26,6 +26,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { FolderSidebar, type MediaFolder } from "@/components/folders/FolderSidebar";
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
