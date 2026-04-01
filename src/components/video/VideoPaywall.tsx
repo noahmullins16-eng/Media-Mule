@@ -173,8 +173,8 @@ export const VideoPaywall = ({
               )}
 
               <div
-                className="absolute inset-0"
-                style={{ zIndex: 25, bottom: "48px" }}
+                className="absolute top-0 left-0 right-0"
+                style={{ zIndex: 25, bottom: "52px" }}
                 onClick={togglePlay}
                 onContextMenu={(e) => e.preventDefault()}
               />
