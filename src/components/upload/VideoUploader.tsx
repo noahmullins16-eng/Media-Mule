@@ -434,7 +434,7 @@ export const VideoUploader = () => {
         variant="premium"
         size="xl"
         className="w-full mt-8"
-        disabled={isUploading || files.length === 0 || !title || !price}
+        disabled={isUploading || files.length === 0 || !title}
       >
         <Upload className="w-5 h-5" />
         {isUploading ? "Uploading..." : `Upload ${files.length > 1 ? "Bundle" : "Content"}`}
