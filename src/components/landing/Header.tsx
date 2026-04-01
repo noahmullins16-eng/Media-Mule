@@ -45,7 +45,7 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
                     <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
                       Dashboard
                     </Link>
-                    <Link to="/my-videos" className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Link to="/my-media" className="text-muted-foreground hover:text-foreground transition-colors">
                       My Media
                     </Link>
                   </>

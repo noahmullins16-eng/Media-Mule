@@ -331,7 +331,7 @@ const Dashboard = () => {
         <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display font-semibold text-lg">Recent Uploads</h2>
-            <Link to="/my-videos" className="text-sm text-accent hover:underline">
+            <Link to="/my-media" className="text-sm text-accent hover:underline">
               View All
             </Link>
           </div>
