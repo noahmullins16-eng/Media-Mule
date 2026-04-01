@@ -312,56 +312,69 @@ export const VideoPaywall = ({
             </div>
 
             <div className="glass-card p-6 text-center min-w-[240px]">
-              <div className="text-4xl font-display font-bold gradient-text mb-2">
-                ${price.toFixed(2)}
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                {bundleFiles.length > 1 ? `${bundleFiles.length} files · One-time payment` : "One-time payment"}
-              </p>
-              {sold ? (
+              {price > 0 ? (
                 <>
-                  <Button variant="premium" size="lg" className="w-full gap-2" disabled>
-                    <ShieldCheck className="w-5 h-5" />
-                    Sold
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    This content has been purchased
+                  <div className="text-4xl font-display font-bold gradient-text mb-2">
+                    ${price.toFixed(2)}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {bundleFiles.length > 1 ? `${bundleFiles.length} files · One-time payment` : "One-time payment"}
                   </p>
+                  {sold ? (
+                    <>
+                      <Button variant="premium" size="lg" className="w-full gap-2" disabled>
+                        <ShieldCheck className="w-5 h-5" />
+                        Sold
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        This content has been purchased
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="premium"
+                        size="lg"
+                        className="w-full gap-2"
+                        disabled={purchasing || isOwner}
+                        onClick={async () => {
+                          if (!videoId) return;
+                          setPurchasing(true);
+                          try {
+                            const { data, error } = await supabase.functions.invoke("create-payment", {
+                              body: { videoId },
+                            });
+                            if (error) throw error;
+                            if (data?.error) throw new Error(data.error);
+                            if (data?.url) {
+                              window.location.href = data.url;
+                            }
+                          } catch (err: any) {
+                            toast.error(err.message || "Failed to start purchase");
+                          }
+                          setPurchasing(false);
+                        }}
+                      >
+                        {purchasing ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <CreditCard className="w-5 h-5" />
+                        )}
+                        {isOwner ? "Your Content" : purchasing ? "Processing..." : "Purchase Now"}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Secure payment via Stripe
+                      </p>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="premium"
-                    size="lg"
-                    className="w-full gap-2"
-                    disabled={purchasing || isOwner}
-                    onClick={async () => {
-                      if (!videoId) return;
-                      setPurchasing(true);
-                      try {
-                        const { data, error } = await supabase.functions.invoke("create-payment", {
-                          body: { videoId },
-                        });
-                        if (error) throw error;
-                        if (data?.error) throw new Error(data.error);
-                        if (data?.url) {
-                          window.location.href = data.url;
-                        }
-                      } catch (err: any) {
-                        toast.error(err.message || "Failed to start purchase");
-                      }
-                      setPurchasing(false);
-                    }}
-                  >
-                    {purchasing ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <CreditCard className="w-5 h-5" />
-                    )}
-                    {isOwner ? "Your Content" : purchasing ? "Processing..." : "Purchase Now"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Secure payment via Stripe
+                  <div className="text-2xl font-display font-bold text-muted-foreground mb-2">
+                    Storage Only
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    This content is not for sale
                   </p>
                 </>
               )}
