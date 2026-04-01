@@ -125,14 +125,14 @@ export const VideoUploader = () => {
       return;
     }
 
-    if (files.length === 0 || !title || !price) {
-      toast.error("Please fill in all required fields and add at least one file");
+    if (files.length === 0 || !title) {
+      toast.error("Please add at least one file and a title");
       return;
     }
 
-    const priceNum = parseFloat(price);
-    if (isNaN(priceNum) || priceNum < 0.99) {
-      toast.error("Price must be at least $0.99");
+    const priceNum = price ? parseFloat(price) : 0;
+    if (price && (isNaN(priceNum) || priceNum < 0.99)) {
+      toast.error("Price must be at least $0.99 or left empty for storage only");
       return;
     }
 
