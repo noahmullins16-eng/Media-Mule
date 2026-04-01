@@ -26,6 +26,7 @@ export type Database = {
           updated_at: string
           user_id: string
           username: string | null
+          username_locked: boolean
         }
         Insert: {
           accumulated_fees?: number
@@ -38,6 +39,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           username?: string | null
+          username_locked?: boolean
         }
         Update: {
           accumulated_fees?: number
@@ -50,6 +52,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+          username_locked?: boolean
         }
         Relationships: []
       }

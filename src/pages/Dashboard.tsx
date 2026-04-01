@@ -42,6 +42,7 @@ const Dashboard = () => {
   const [savingUsername, setSavingUsername] = useState(false);
   const [connectOnboarded, setConnectOnboarded] = useState<boolean | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
+  const [usernameLocked, setUsernameLocked] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -61,7 +62,7 @@ const Dashboard = () => {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("creator_profiles")
-        .select("tier, storage_used, username, stripe_account_id")
+        .select("tier, storage_used, username, stripe_account_id, username_locked")
         .eq("user_id", user.id)
         .maybeSingle();
       
@@ -71,6 +72,7 @@ const Dashboard = () => {
         setUsername(data.username || "");
         setUsernameInput(data.username || "");
         setConnectOnboarded(!!data.stripe_account_id);
+        setUsernameLocked(!!(data as any).username_locked);
       }
     };
 
@@ -132,12 +134,14 @@ const Dashboard = () => {
             {username ? (
               <div className="flex items-center gap-2">
               <span className="font-display text-3xl font-bold text-accent">{username}</span>
-                <button
-                  onClick={() => setEditingUsername(true)}
-                  className="opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
-                >
-                  <Pencil className="w-4 h-4 text-muted-foreground" />
-                </button>
+                {!usernameLocked && (
+                  <button
+                    onClick={() => setEditingUsername(true)}
+                    className="opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
+                  >
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -182,7 +186,7 @@ const Dashboard = () => {
                 )}
               </div>
             )}
-            {editingUsername && username && (
+            {editingUsername && username && !usernameLocked && (
               <form
                 className="flex items-center gap-2 mt-1"
                 onSubmit={async (e) => {
