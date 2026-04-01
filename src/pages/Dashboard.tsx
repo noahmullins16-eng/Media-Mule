@@ -402,6 +402,20 @@ const Dashboard = () => {
                 onSelectFolder={setActiveFolderId}
                 onFoldersChange={fetchFolders}
                 userId={user.id}
+                onDropVideo={async (videoId, folderId) => {
+                  const { error } = await supabase
+                    .from("videos")
+                    .update({ folder_id: folderId } as any)
+                    .eq("id", videoId);
+                  if (error) {
+                    toast.error("Failed to move video");
+                  } else {
+                    setRecentVideos((prev) =>
+                      prev.map((v) => v.id === videoId ? { ...v, folder_id: folderId } : v)
+                    );
+                    toast.success("Video moved");
+                  }
+                }}
               />
             </aside>
 
@@ -418,7 +432,12 @@ const Dashboard = () => {
                       <Link
                         key={v.id}
                         to={`/video/${v.id}`}
-                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/video-id", v.id);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-grab active:cursor-grabbing"
                       >
                         <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
                           <Video className="w-5 h-5 text-accent" />
@@ -458,7 +477,7 @@ const Dashboard = () => {
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4 max-w-sm">
                       {activeFolderId
-                        ? "Move videos into this folder from the My Media page."
+                        ? "Drag videos here or move them from the My Media page."
                         : "Upload your first file to start distributing media through MediaMule."}
                     </p>
                     <Link to={activeFolderId ? "/my-media" : "/upload"}>
