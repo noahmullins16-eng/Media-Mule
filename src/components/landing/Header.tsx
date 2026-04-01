@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import logoFull from "@/assets/logo-full.png";
 

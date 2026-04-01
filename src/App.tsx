@@ -18,6 +18,7 @@ import VideoPreview from "./pages/VideoPreview";
 import HowItWorks from "./pages/HowItWorks";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
