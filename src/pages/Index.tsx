@@ -96,7 +96,7 @@ const Index = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
               </span>
-              <span className="text-sm text-accent font-medium">The Creator's Distribution Platform</span>
+              <span className="text-sm text-accent font-medium">Cater to the Creator</span>
             </motion.div>
 
             <motion.h1 
