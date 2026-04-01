@@ -34,20 +34,20 @@ export const VideoUploader = () => {
   const [uploadComplete, setUploadComplete] = useState(false);
   const [tier, setTier] = useState<SubscriptionTier>("basic");
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
+  const [folderId, setFolderId] = useState<string | null>(null);
+  const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     if (!user) return;
-    const fetchTier = async () => {
-      const { data } = await supabase
-        .from("creator_profiles")
-        .select("tier")
-        .eq("user_id", user.id)
-        .single();
-      if (data?.tier) {
-        setTier(data.tier as SubscriptionTier);
-      }
+    const fetchData = async () => {
+      const [tierRes, foldersRes] = await Promise.all([
+        supabase.from("creator_profiles").select("tier").eq("user_id", user.id).single(),
+        supabase.from("media_folders").select("id, name").eq("user_id", user.id).order("sort_order"),
+      ]);
+      if (tierRes.data?.tier) setTier(tierRes.data.tier as SubscriptionTier);
+      if (foldersRes.data) setFolders(foldersRes.data);
     };
-    fetchTier();
+    fetchData();
   }, [user]);
 
   const tierConfig = TIER_CONFIG[tier];
