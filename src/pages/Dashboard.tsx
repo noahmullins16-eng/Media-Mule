@@ -5,6 +5,7 @@ import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
+import { downloadMedia } from "@/lib/download-media";
 import { toast } from "sonner";
 import {
   Upload,
