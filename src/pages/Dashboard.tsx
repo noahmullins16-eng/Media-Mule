@@ -131,12 +131,12 @@ const Dashboard = () => {
             <h1 className="font-display text-3xl font-bold mb-1">Creator Dashboard</h1>
             {username ? (
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-accent">{username}</span>
+              <span className="font-display text-3xl font-bold text-accent">{username}</span>
                 <button
                   onClick={() => setEditingUsername(true)}
                   className="opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
                 >
-                  <Pencil className="w-3 h-3 text-muted-foreground" />
+                  <Pencil className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
             ) : (
