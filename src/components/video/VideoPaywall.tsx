@@ -51,6 +51,9 @@ export const VideoPaywall = ({
   const [isMuted, setIsMuted] = useState(true);
   const [activeFileIndex, setActiveFileIndex] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
 
   const activeFile = bundleFiles[activeFileIndex];
   const activeUrl = activeFile?.signedUrl || videoUrl || "";
