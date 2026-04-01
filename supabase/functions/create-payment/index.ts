@@ -63,8 +63,11 @@ serve(async (req) => {
       .single();
 
     if (!creatorProfile?.stripe_account_id) {
-      throw new Error("Creator has not set up payments yet");
+      console.error("Creator missing stripe_account_id for user:", video.user_id);
+      throw new Error("Creator has not set up payments yet. Please ask the creator to complete Stripe onboarding.");
     }
+
+    console.log("Using Connect account:", creatorProfile.stripe_account_id);
 
     const feeRate = TIER_FEE[creatorProfile.tier] ?? 0.04;
     const priceInCents = Math.round(video.price * 100);
