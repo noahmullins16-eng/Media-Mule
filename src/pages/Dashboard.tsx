@@ -72,6 +72,7 @@ const Dashboard = () => {
         setUsername(data.username || "");
         setUsernameInput(data.username || "");
         setConnectOnboarded(!!data.stripe_account_id);
+        setUsernameLocked(!!(data as any).username_locked);
       }
     };
 
