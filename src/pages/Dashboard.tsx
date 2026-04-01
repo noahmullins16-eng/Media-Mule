@@ -134,12 +134,14 @@ const Dashboard = () => {
             {username ? (
               <div className="flex items-center gap-2">
               <span className="font-display text-3xl font-bold text-accent">{username}</span>
-                <button
-                  onClick={() => setEditingUsername(true)}
-                  className="opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
-                >
-                  <Pencil className="w-4 h-4 text-muted-foreground" />
-                </button>
+                {!usernameLocked && (
+                  <button
+                    onClick={() => setEditingUsername(true)}
+                    className="opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
+                  >
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
