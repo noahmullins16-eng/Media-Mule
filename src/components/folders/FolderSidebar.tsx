@@ -19,6 +19,7 @@ interface FolderSidebarProps {
   onSelectFolder: (folderId: string | null) => void;
   onFoldersChange: () => void;
   userId: string;
+  onDropVideo?: (videoId: string, folderId: string | null) => void;
 }
 
 export const FolderSidebar = ({
@@ -27,11 +28,32 @@ export const FolderSidebar = ({
   onSelectFolder,
   onFoldersChange,
   userId,
+  onDropVideo,
 }: FolderSidebarProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [dragOverId, setDragOverId] = useState<string | "all" | null>(null);
+
+  const handleDragOver = (e: React.DragEvent, id: string | "all") => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverId(id);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, folderId: string | null) => {
+    e.preventDefault();
+    setDragOverId(null);
+    const videoId = e.dataTransfer.getData("text/video-id");
+    if (videoId && onDropVideo) {
+      onDropVideo(videoId, folderId);
+    }
+  };
 
   const handleCreate = async () => {
     const name = newName.trim();
@@ -98,10 +120,15 @@ export const FolderSidebar = ({
       {/* All items */}
       <button
         onClick={() => onSelectFolder(null)}
+        onDragOver={(e) => handleDragOver(e, "all")}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, null)}
         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-          activeFolderId === null
-            ? "bg-accent/15 text-accent font-medium"
-            : "text-muted-foreground hover:bg-muted"
+          dragOverId === "all"
+            ? "bg-accent/25 ring-2 ring-accent/50"
+            : activeFolderId === null
+              ? "bg-accent/15 text-accent font-medium"
+              : "text-muted-foreground hover:bg-muted"
         }`}
       >
         <LayoutGrid className="w-4 h-4 shrink-0" />
@@ -133,10 +160,15 @@ export const FolderSidebar = ({
           ) : (
             <button
               onClick={() => onSelectFolder(folder.id)}
+              onDragOver={(e) => handleDragOver(e, folder.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, folder.id)}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                activeFolderId === folder.id
-                  ? "bg-accent/15 text-accent font-medium"
-                  : "text-muted-foreground hover:bg-muted"
+                dragOverId === folder.id
+                  ? "bg-accent/25 ring-2 ring-accent/50"
+                  : activeFolderId === folder.id
+                    ? "bg-accent/15 text-accent font-medium"
+                    : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {activeFolderId === folder.id ? (
