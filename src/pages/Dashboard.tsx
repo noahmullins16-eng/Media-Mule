@@ -62,7 +62,7 @@ const Dashboard = () => {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("creator_profiles")
-        .select("tier, storage_used, username, stripe_account_id")
+        .select("tier, storage_used, username, stripe_account_id, username_locked")
         .eq("user_id", user.id)
         .maybeSingle();
       
