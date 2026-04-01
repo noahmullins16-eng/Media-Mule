@@ -32,6 +32,8 @@ serve(async (req) => {
     const { videoId } = await req.json();
     if (!videoId) throw new Error("Missing videoId");
 
+    console.log("Processing payment for video:", videoId);
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -45,10 +47,13 @@ serve(async (req) => {
       .eq("id", videoId)
       .single();
 
-    if (videoError || !video) throw new Error("Video not found");
+    if (videoError || !video) {
+      console.error("Video fetch error:", videoError);
+      throw new Error("Video not found");
+    }
     if (video.sold) throw new Error("This content has already been sold");
     if (video.status !== "published") throw new Error("This content is not available for purchase");
-    if (video.price <= 0) throw new Error("Invalid price");
+    if (!video.price || video.price <= 0) throw new Error("This content is not for sale");
 
     // Get creator's Connect account and tier
     const { data: creatorProfile } = await supabaseClient
@@ -58,8 +63,11 @@ serve(async (req) => {
       .single();
 
     if (!creatorProfile?.stripe_account_id) {
-      throw new Error("Creator has not set up payments yet");
+      console.error("Creator missing stripe_account_id for user:", video.user_id);
+      throw new Error("Creator has not set up payments yet. Please ask the creator to complete Stripe onboarding.");
     }
+
+    console.log("Using Connect account:", creatorProfile.stripe_account_id);
 
     const feeRate = TIER_FEE[creatorProfile.tier] ?? 0.04;
     const priceInCents = Math.round(video.price * 100);
