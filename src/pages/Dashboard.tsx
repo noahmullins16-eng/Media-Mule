@@ -44,6 +44,8 @@ const Dashboard = () => {
   const [connectOnboarded, setConnectOnboarded] = useState<boolean | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
   const [usernameLocked, setUsernameLocked] = useState(false);
+  const [folders, setFolders] = useState<MediaFolder[]>([]);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
