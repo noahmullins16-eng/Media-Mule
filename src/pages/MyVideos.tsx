@@ -267,6 +267,9 @@ const MyVideos = () => {
                           className="scale-90"
                         />
                       </div>
+                      <Button variant="ghost" size="icon" onClick={() => downloadMedia(video.file_path, video.title)} title="Download">
+                        <Download className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleCopyLink(video.id)} title="Copy purchase link">
                         <Link2 className="w-4 h-4" />
                       </Button>
