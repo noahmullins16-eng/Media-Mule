@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -33,20 +34,20 @@ export const VideoUploader = () => {
   const [uploadComplete, setUploadComplete] = useState(false);
   const [tier, setTier] = useState<SubscriptionTier>("basic");
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
+  const [folderId, setFolderId] = useState<string | null>(null);
+  const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     if (!user) return;
-    const fetchTier = async () => {
-      const { data } = await supabase
-        .from("creator_profiles")
-        .select("tier")
-        .eq("user_id", user.id)
-        .single();
-      if (data?.tier) {
-        setTier(data.tier as SubscriptionTier);
-      }
+    const fetchData = async () => {
+      const [tierRes, foldersRes] = await Promise.all([
+        supabase.from("creator_profiles").select("tier").eq("user_id", user.id).single(),
+        supabase.from("media_folders").select("id, name").eq("user_id", user.id).order("sort_order"),
+      ]);
+      if (tierRes.data?.tier) setTier(tierRes.data.tier as SubscriptionTier);
+      if (foldersRes.data) setFolders(foldersRes.data);
     };
-    fetchTier();
+    fetchData();
   }, [user]);
 
   const tierConfig = TIER_CONFIG[tier];
@@ -165,6 +166,7 @@ export const VideoUploader = () => {
           file_size: primaryFile.file.size,
           status: "published",
           watermarks_enabled: watermarksEnabled,
+          folder_id: folderId || null,
         })
         .select("id")
         .single();
@@ -235,6 +237,7 @@ export const VideoUploader = () => {
             setPrice("");
             setUploadComplete(false);
             setUploadProgress(0);
+            setFolderId(null);
           }}>
             Upload Another
           </Button>
@@ -367,6 +370,25 @@ export const VideoUploader = () => {
           />
         </div>
 
+        {folders.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium mb-2">Folder (optional)</label>
+            <Select value={folderId || "none"} onValueChange={(v) => setFolderId(v === "none" ? null : v)}>
+              <SelectTrigger className="bg-background/50">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="w-4 h-4 text-muted-foreground" />
+                  <SelectValue placeholder="No folder" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No folder</SelectItem>
+                {folders.map((folder) => (
+                  <SelectItem key={folder.id} value={folder.id}>{folder.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium mb-2">Price (USD) *</label>
           <div className="relative">
