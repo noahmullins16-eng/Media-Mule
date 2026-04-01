@@ -42,6 +42,7 @@ const Dashboard = () => {
   const [savingUsername, setSavingUsername] = useState(false);
   const [connectOnboarded, setConnectOnboarded] = useState<boolean | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
+  const [usernameLocked, setUsernameLocked] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
