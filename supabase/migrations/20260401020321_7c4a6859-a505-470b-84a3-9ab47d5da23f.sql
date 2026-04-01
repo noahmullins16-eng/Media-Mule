@@ -1,0 +1,1 @@
+UPDATE creator_profiles SET username = 'Colton Smith', username_locked = false WHERE user_id = 'baad26e9-78bd-442d-b162-ee781e7d40b6';
