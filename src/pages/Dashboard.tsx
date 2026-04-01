@@ -186,7 +186,7 @@ const Dashboard = () => {
                 )}
               </div>
             )}
-            {editingUsername && username && (
+            {editingUsername && username && !usernameLocked && (
               <form
                 className="flex items-center gap-2 mt-1"
                 onSubmit={async (e) => {
