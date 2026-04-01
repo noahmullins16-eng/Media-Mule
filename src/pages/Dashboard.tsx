@@ -265,42 +265,65 @@ const Dashboard = () => {
 
         {/* Stripe Connect Banner */}
         {connectOnboarded === false && (
-          <div className="glass-card p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-accent/20 bg-accent/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-accent" />
+          <div className="glass-card p-8 mb-8 border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-accent/15 flex items-center justify-center shrink-0">
+                <DollarSign className="w-7 h-7 text-accent" />
               </div>
-              <div>
-                <p className="font-display font-semibold">Set Up Payments</p>
-                <p className="text-sm text-muted-foreground">
-                  Connect your bank account to receive payments from buyers
+              <div className="flex-1 min-w-0">
+                <h2 className="font-display font-bold text-xl mb-1">Start Receiving Payments</h2>
+                <p className="text-muted-foreground mb-4">
+                  Set up your payment account to start earning from your media sales. It only takes a few minutes.
                 </p>
+                <div className="grid sm:grid-cols-3 gap-4 mb-2">
+                  <div className="flex items-start gap-3">
+                    <span className="w-7 h-7 rounded-full bg-accent/15 text-accent font-bold text-sm flex items-center justify-center shrink-0">1</span>
+                    <div>
+                      <p className="text-sm font-medium">Connect Account</p>
+                      <p className="text-xs text-muted-foreground">Link your bank or debit card</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-7 h-7 rounded-full bg-accent/15 text-accent font-bold text-sm flex items-center justify-center shrink-0">2</span>
+                    <div>
+                      <p className="text-sm font-medium">Verify Identity</p>
+                      <p className="text-xs text-muted-foreground">Quick verification for payouts</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-7 h-7 rounded-full bg-accent/15 text-accent font-bold text-sm flex items-center justify-center shrink-0">3</span>
+                    <div>
+                      <p className="text-sm font-medium">Get Paid</p>
+                      <p className="text-xs text-muted-foreground">Receive funds from every sale</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <Button
-              variant="hero"
-              size="sm"
-              disabled={connectLoading}
-              onClick={async () => {
-                setConnectLoading(true);
-                try {
-                  const { data, error } = await supabase.functions.invoke("connect-onboarding");
-                  if (error) throw error;
-                  if (data?.url) {
-                    window.location.href = data.url;
-                  } else if (data?.onboarded) {
-                    setConnectOnboarded(true);
-                    toast.success("Payments already set up!");
+              <Button
+                variant="hero"
+                disabled={connectLoading}
+                className="shrink-0"
+                onClick={async () => {
+                  setConnectLoading(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke("connect-onboarding");
+                    if (error) throw error;
+                    if (data?.url) {
+                      window.location.href = data.url;
+                    } else if (data?.onboarded) {
+                      setConnectOnboarded(true);
+                      toast.success("Payments already set up!");
+                    }
+                  } catch (err) {
+                    toast.error("Failed to start payment setup");
+                    console.error(err);
                   }
-                } catch (err) {
-                  toast.error("Failed to start payment setup");
-                  console.error(err);
-                }
-                setConnectLoading(false);
-              }}
-            >
-              {connectLoading ? "Loading..." : "Set Up Now"}
-            </Button>
+                  setConnectLoading(false);
+                }}
+              >
+                {connectLoading ? "Loading..." : "Set Up Payments"}
+              </Button>
+            </div>
           </div>
         )}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
