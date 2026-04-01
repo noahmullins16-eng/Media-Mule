@@ -125,14 +125,14 @@ export const VideoUploader = () => {
       return;
     }
 
-    if (files.length === 0 || !title || !price) {
-      toast.error("Please fill in all required fields and add at least one file");
+    if (files.length === 0 || !title) {
+      toast.error("Please add at least one file and a title");
       return;
     }
 
-    const priceNum = parseFloat(price);
-    if (isNaN(priceNum) || priceNum < 0.99) {
-      toast.error("Price must be at least $0.99");
+    const priceNum = price ? parseFloat(price) : 0;
+    if (price && (isNaN(priceNum) || priceNum < 0.99)) {
+      toast.error("Price must be at least $0.99 or left empty for storage only");
       return;
     }
 
@@ -390,7 +390,8 @@ export const VideoUploader = () => {
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium mb-2">Price (USD) *</label>
+          <label className="block text-sm font-medium mb-2">Price (USD)</label>
+          <p className="text-xs text-muted-foreground mb-2">Leave empty for storage only (not for sale)</p>
           <div className="relative">
             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
@@ -402,7 +403,6 @@ export const VideoUploader = () => {
               placeholder="9.99"
               className="bg-background/50 pl-10"
               disabled={isUploading}
-              required
             />
           </div>
         </div>
@@ -434,7 +434,7 @@ export const VideoUploader = () => {
         variant="premium"
         size="xl"
         className="w-full mt-8"
-        disabled={isUploading || files.length === 0 || !title || !price}
+        disabled={isUploading || files.length === 0 || !title}
       >
         <Upload className="w-5 h-5" />
         {isUploading ? "Uploading..." : `Upload ${files.length > 1 ? "Bundle" : "Content"}`}
