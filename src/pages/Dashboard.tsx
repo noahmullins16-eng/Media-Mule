@@ -59,6 +59,16 @@ const Dashboard = () => {
     }
   }, [searchParams]);
 
+  const fetchFolders = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("media_folders")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("sort_order", { ascending: true });
+    setFolders((data as MediaFolder[]) || []);
+  };
+
   useEffect(() => {
     if (!user) return;
     
@@ -91,15 +101,6 @@ const Dashboard = () => {
         setTotalFileSize(data.reduce((sum, v) => sum + (v.file_size || 0), 0));
         setRecentVideos(data);
       }
-    };
-
-    const fetchFolders = async () => {
-      const { data } = await supabase
-        .from("media_folders")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("sort_order", { ascending: true });
-      setFolders((data as MediaFolder[]) || []);
     };
     
     fetchProfile();
