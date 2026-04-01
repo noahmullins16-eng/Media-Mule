@@ -82,19 +82,29 @@ const Dashboard = () => {
     const fetchVideos = async () => {
       const { data, count } = await supabase
         .from("videos")
-        .select("id, title, price, file_size, status, created_at", { count: "exact" })
+        .select("id, title, price, file_size, file_path, status, created_at, folder_id", { count: "exact" })
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (data) {
         setVideoCount(count || data.length);
         setTotalFileSize(data.reduce((sum, v) => sum + (v.file_size || 0), 0));
-        setRecentVideos(data.slice(0, 5));
+        setRecentVideos(data);
       }
+    };
+
+    const fetchFolders = async () => {
+      const { data } = await supabase
+        .from("media_folders")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("sort_order", { ascending: true });
+      setFolders((data as MediaFolder[]) || []);
     };
     
     fetchProfile();
     fetchVideos();
+    fetchFolders();
 
     // Check Connect onboarding status
     const checkConnect = async () => {
