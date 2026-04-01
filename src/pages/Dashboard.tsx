@@ -326,6 +326,15 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+        {connectOnboarded === true && (
+          <div className="glass-card p-4 mb-8 flex items-center gap-3 border-green-500/20 bg-green-500/5">
+            <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
+              <Check className="w-4 h-4 text-green-500" />
+            </div>
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">Payments Active</p>
+            <span className="text-xs text-muted-foreground">— Your account is set up to receive payments from buyers</span>
+          </div>
+        )}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon;
