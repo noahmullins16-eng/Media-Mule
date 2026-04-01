@@ -166,6 +166,7 @@ export const VideoUploader = () => {
           file_size: primaryFile.file.size,
           status: "published",
           watermarks_enabled: watermarksEnabled,
+          folder_id: folderId || null,
         })
         .select("id")
         .single();
