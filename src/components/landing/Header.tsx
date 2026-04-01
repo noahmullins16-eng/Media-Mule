@@ -57,6 +57,9 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
               <div className="flex items-center gap-3">
                 {user ? (
                   <>
+                    <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors" title="Account Settings">
+                      <Settings className="w-5 h-5" />
+                    </Link>
                     <span className="hidden sm:inline-flex text-sm text-muted-foreground">
                       {user.email}
                     </span>
