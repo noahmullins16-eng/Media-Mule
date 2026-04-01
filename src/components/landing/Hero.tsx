@@ -41,7 +41,7 @@ export const Hero = () => {
                 Upload Your Video
               </Button>
             </Link>
-            <Link to="/my-videos">
+            <Link to="/my-media">
               <Button variant="heroOutline" size="xl" className="gap-3">
                 <Play className="w-5 h-5" />
                 My Videos

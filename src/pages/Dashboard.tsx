@@ -305,7 +305,7 @@ const Dashboard = () => {
                   <p className="text-xs text-muted-foreground">Video, audio, images</p>
                 </div>
               </Link>
-              <Link to="/my-videos" className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group">
+              <Link to="/my-media" className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group">
                 <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
                   <Video className="w-4 h-4 text-accent" />
                 </div>
@@ -331,7 +331,7 @@ const Dashboard = () => {
         <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display font-semibold text-lg">Recent Uploads</h2>
-            <Link to="/my-videos" className="text-sm text-accent hover:underline">
+            <Link to="/my-media" className="text-sm text-accent hover:underline">
               View All
             </Link>
           </div>
