@@ -5,6 +5,7 @@ import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
+import { downloadMedia } from "@/lib/download-media";
 import { toast } from "sonner";
 import {
   Upload,
@@ -354,6 +355,19 @@ const Dashboard = () => {
                   <span className="text-xs font-medium capitalize px-2 py-0.5 rounded-full bg-accent/10 text-accent">
                     {v.status}
                   </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    title="Download"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      downloadMedia(v.file_path, v.title);
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
                 </Link>
               ))}
             </div>

@@ -6,7 +6,8 @@ import { Header } from "@/components/landing/Header";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Video, Trash2, ExternalLink, Link2, ShieldCheck, FolderInput } from "lucide-react";
+import { Upload, Video, Trash2, ExternalLink, Link2, ShieldCheck, FolderInput, Download } from "lucide-react";
+import { downloadMedia } from "@/lib/download-media";
 import { toast } from "sonner";
 import { WatermarkUploader } from "@/components/upload/WatermarkUploader";
 import { FolderSidebar, type MediaFolder } from "@/components/folders/FolderSidebar";
@@ -266,6 +267,9 @@ const MyVideos = () => {
                           className="scale-90"
                         />
                       </div>
+                      <Button variant="ghost" size="icon" onClick={() => downloadMedia(video.file_path, video.title)} title="Download">
+                        <Download className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleCopyLink(video.id)} title="Copy purchase link">
                         <Link2 className="w-4 h-4" />
                       </Button>
