@@ -28,6 +28,7 @@ export const VideoUploader = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [pricingEnabled, setPricingEnabled] = useState(true);
   const [watermarksEnabled, setWatermarksEnabled] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
