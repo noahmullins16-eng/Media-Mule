@@ -28,6 +28,7 @@ export const VideoUploader = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [pricingEnabled, setPricingEnabled] = useState(true);
   const [watermarksEnabled, setWatermarksEnabled] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -389,23 +390,43 @@ export const VideoUploader = () => {
             </Select>
           </div>
         )}
-        <div>
-          <label className="block text-sm font-medium mb-2">Price (USD)</label>
-          <p className="text-xs text-muted-foreground mb-2">Leave empty for storage only (not for sale)</p>
-          <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="number"
-              min="0.99"
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="9.99"
-              className="bg-background/50 pl-10"
-              disabled={isUploading}
-            />
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-5 h-5 text-accent" />
+            <div>
+              <Label htmlFor="pricing-toggle" className="text-sm font-medium">Set a Price</Label>
+              <p className="text-xs text-muted-foreground">Disable to use as storage only (not for sale)</p>
+            </div>
           </div>
+          <Switch
+            id="pricing-toggle"
+            checked={pricingEnabled}
+            onCheckedChange={(checked) => {
+              setPricingEnabled(checked);
+              if (!checked) setPrice("");
+            }}
+            disabled={isUploading}
+          />
         </div>
+
+        {pricingEnabled && (
+          <div>
+            <label className="block text-sm font-medium mb-2">Price (USD)</label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="number"
+                min="0.99"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="9.99"
+                className="bg-background/50 pl-10"
+                disabled={isUploading}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-between rounded-lg border border-border p-4">
           <div className="flex items-center gap-3">
