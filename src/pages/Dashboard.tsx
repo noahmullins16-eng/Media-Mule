@@ -84,7 +84,7 @@ const Dashboard = () => {
         setStorageUsed(data.storage_used);
         setUsername(data.username || "");
         setUsernameInput(data.username || "");
-        setConnectOnboarded(!!data.stripe_account_id);
+        // Don't set connectOnboarded from profile alone — wait for edge function check
         setUsernameLocked(!!(data as any).username_locked);
       }
     };
@@ -110,7 +110,7 @@ const Dashboard = () => {
     // Check Connect onboarding status
     const checkConnect = async () => {
       const { data } = await supabase.functions.invoke("connect-onboarding");
-      if (data?.onboarded) setConnectOnboarded(true);
+      setConnectOnboarded(data?.onboarded === true);
     };
     checkConnect();
   }, [user]);
