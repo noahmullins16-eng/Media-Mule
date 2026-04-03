@@ -70,9 +70,15 @@ const Settings = () => {
         setUsernameInput(data.username || "");
         setUsernameLocked(!!(data as any).username_locked);
         setTier(data.tier);
-        setConnectOnboarded(!!data.stripe_account_id);
       }
-    };
+
+      // Check actual onboarding status via edge function
+      if (data?.stripe_account_id) {
+        const { data: connectData } = await supabase.functions.invoke("connect-onboarding");
+        setConnectOnboarded(connectData?.onboarded === true);
+      } else {
+        setConnectOnboarded(false);
+      }
 
     fetchProfile();
   }, [user]);
