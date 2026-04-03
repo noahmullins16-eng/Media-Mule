@@ -79,6 +79,7 @@ const Settings = () => {
       } else {
         setConnectOnboarded(false);
       }
+    };
 
     fetchProfile();
   }, [user]);
