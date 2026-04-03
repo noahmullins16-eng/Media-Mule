@@ -110,7 +110,7 @@ const Dashboard = () => {
     // Check Connect onboarding status
     const checkConnect = async () => {
       const { data } = await supabase.functions.invoke("connect-onboarding");
-      if (data?.onboarded) setConnectOnboarded(true);
+      setConnectOnboarded(data?.onboarded === true);
     };
     checkConnect();
   }, [user]);
