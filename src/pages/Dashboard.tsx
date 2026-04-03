@@ -335,6 +335,68 @@ const Dashboard = () => {
             <span className="text-xs text-muted-foreground">— Your account is set up to receive payments from buyers</span>
           </div>
         )}
+
+        {/* Storage & Quick Actions */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          {/* Storage Usage */}
+          <div className="glass-card p-6 lg:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+                <HardDrive className="w-5 h-5 text-accent" />
+                Storage Usage
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                {storageUsedGB.toFixed(2)} GB / {tierConfig.totalStorageLabel}
+              </span>
+            </div>
+            <div className="w-full h-3 rounded-full bg-muted overflow-hidden mb-3">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-accent to-accent-secondary transition-all"
+                style={{ width: `${Math.max(storagePercent, 1)}%` }}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {storagePercent < 1
+                ? "You have plenty of storage available. Start uploading!"
+                : `${storagePercent.toFixed(1)}% of your storage is in use.`}
+            </p>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="glass-card p-6">
+            <h2 className="font-display font-semibold text-lg mb-4">Quick Actions</h2>
+            <div className="space-y-3">
+              <Link to="/upload" className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Upload className="w-4 h-4 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium group-hover:text-accent transition-colors">Upload Media</p>
+                  <p className="text-xs text-muted-foreground">Video, audio, images</p>
+                </div>
+              </Link>
+              <Link to="/my-media" className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Video className="w-4 h-4 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium group-hover:text-accent transition-colors">My Media</p>
+                  <p className="text-xs text-muted-foreground">Manage your files</p>
+                </div>
+              </Link>
+              <Link to="/pricing" className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium group-hover:text-accent transition-colors">Upgrade Plan</p>
+                  <p className="text-xs text-muted-foreground">Unlock more features</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon;
@@ -460,67 +522,6 @@ const Dashboard = () => {
                   </div>
                 );
               })()}
-            </div>
-          </div>
-        </div>
-
-        {/* Storage & Quick Actions */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          {/* Storage Usage */}
-          <div className="glass-card p-6 lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-semibold text-lg flex items-center gap-2">
-                <HardDrive className="w-5 h-5 text-accent" />
-                Storage Usage
-              </h2>
-              <span className="text-sm text-muted-foreground">
-                {storageUsedGB.toFixed(2)} GB / {tierConfig.totalStorageLabel}
-              </span>
-            </div>
-            <div className="w-full h-3 rounded-full bg-muted overflow-hidden mb-3">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-accent to-accent-secondary transition-all"
-                style={{ width: `${Math.max(storagePercent, 1)}%` }}
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {storagePercent < 1
-                ? "You have plenty of storage available. Start uploading!"
-                : `${storagePercent.toFixed(1)}% of your storage is in use.`}
-            </p>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="glass-card p-6">
-            <h2 className="font-display font-semibold text-lg mb-4">Quick Actions</h2>
-            <div className="space-y-3">
-              <Link to="/upload" className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group">
-                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Upload className="w-4 h-4 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium group-hover:text-accent transition-colors">Upload Media</p>
-                  <p className="text-xs text-muted-foreground">Video, audio, images</p>
-                </div>
-              </Link>
-              <Link to="/my-media" className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group">
-                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Video className="w-4 h-4 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium group-hover:text-accent transition-colors">My Media</p>
-                  <p className="text-xs text-muted-foreground">Manage your files</p>
-                </div>
-              </Link>
-              <Link to="/pricing" className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group">
-                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium group-hover:text-accent transition-colors">Upgrade Plan</p>
-                  <p className="text-xs text-muted-foreground">Unlock more features</p>
-                </div>
-              </Link>
             </div>
           </div>
         </div>
