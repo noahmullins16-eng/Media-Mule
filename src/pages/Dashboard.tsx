@@ -92,7 +92,7 @@ const Dashboard = () => {
     const fetchVideos = async () => {
       const { data, count } = await supabase
         .from("videos")
-        .select("id, title, price, file_size, file_path, status, created_at, folder_id", { count: "exact" })
+        .select("id, title, price, file_size, file_path, status, created_at, folder_id, sold, updated_at", { count: "exact" })
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
