@@ -533,15 +533,39 @@ const Dashboard = () => {
               Transaction History
             </h2>
           </div>
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Clock className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold mb-1">No transactions yet</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              When buyers purchase your media, transactions will appear here with payment details and download history.
-            </p>
-          </div>
+          {(() => {
+            const soldVideos = recentVideos.filter(v => v.sold);
+            return soldVideos.length > 0 ? (
+              <div className="space-y-3">
+                {soldVideos.map((v) => (
+                  <div key={v.id} className="flex items-center gap-4 p-3 rounded-xl bg-muted/30">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                      <DollarSign className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{v.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Sold · {new Date(v.updated_at || v.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-green-500">
+                      +${Number(v.price).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Clock className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold mb-1">No transactions yet</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  When buyers purchase your media, transactions will appear here with payment details and download history.
+                </p>
+              </div>
+            );
+          })()}
         </div>
       </main>
     </div>
