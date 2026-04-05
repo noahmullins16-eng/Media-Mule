@@ -108,7 +108,7 @@ const MyVideos = () => {
   };
 
   const handleCopyLink = (videoId: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/video/${videoId}`);
+    navigator.clipboard.writeText(`https://mediamuleco.com/video/${videoId}`);
     toast.success("Purchase link copied!");
   };
 
