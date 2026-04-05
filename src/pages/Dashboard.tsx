@@ -47,6 +47,7 @@ const Dashboard = () => {
   const [usernameLocked, setUsernameLocked] = useState(false);
   const [folders, setFolders] = useState<MediaFolder[]>([]);
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
