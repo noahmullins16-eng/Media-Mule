@@ -29,8 +29,17 @@ serve(async (req) => {
   );
 
   try {
-    const { videoId } = await req.json();
+    const { videoId, buyerEmail } = await req.json();
     if (!videoId) throw new Error("Missing videoId");
+
+    // Try to get authenticated buyer
+    let buyerUserId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData } = await supabaseClient.auth.getUser(token);
+      if (userData?.user) buyerUserId = userData.user.id;
+    }
 
     console.log("Processing payment for video:", videoId);
 
@@ -107,11 +116,19 @@ serve(async (req) => {
       },
     });
 
-    // Mark video as sold and track accumulated fees
-    await supabaseClient
-      .from("videos")
-      .update({ sold: true })
-      .eq("id", video.id);
+    // Mark video as sold, record the purchase, and track accumulated fees
+    const purchaseEmail = buyerEmail || (buyerUserId ? "authenticated-user" : "guest");
+    await Promise.all([
+      supabaseClient.from("videos").update({ sold: true }).eq("id", video.id),
+      supabaseClient.from("purchases").insert({
+        video_id: video.id,
+        buyer_user_id: buyerUserId,
+        buyer_email: purchaseEmail,
+        seller_user_id: video.user_id,
+        amount: video.price,
+        stripe_session_id: session.id,
+      }),
+    ]);
 
     // Increment accumulated fees for fee-based upgrade tracking
     const feeAmount = platformFee / 100;

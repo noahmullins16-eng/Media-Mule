@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { FolderSidebar, type MediaFolder } from "@/components/folders/FolderSidebar";
+import { ShoppingCart } from "lucide-react";
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
@@ -46,6 +47,7 @@ const Dashboard = () => {
   const [usernameLocked, setUsernameLocked] = useState(false);
   const [folders, setFolders] = useState<MediaFolder[]>([]);
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -103,9 +105,32 @@ const Dashboard = () => {
       }
     };
     
+    const fetchTransactions = async () => {
+      // Sold videos (as seller)
+      const { data: sales } = await supabase
+        .from("purchases")
+        .select("id, video_id, amount, created_at, videos!inner(title)")
+        .eq("seller_user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      // Bought videos (as buyer)
+      const { data: bought } = await supabase
+        .from("purchases")
+        .select("id, video_id, amount, created_at, videos!inner(title)")
+        .eq("buyer_user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      const allTx = [
+        ...(sales || []).map((t: any) => ({ ...t, type: "sold" as const, title: t.videos?.title })),
+        ...(bought || []).map((t: any) => ({ ...t, type: "bought" as const, title: t.videos?.title })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setTransactions(allTx);
+    };
+
     fetchProfile();
     fetchVideos();
     fetchFolders();
+    fetchTransactions();
 
     // Check Connect onboarding status
     const checkConnect = async () => {
@@ -533,39 +558,43 @@ const Dashboard = () => {
               Transaction History
             </h2>
           </div>
-          {(() => {
-            const soldVideos = recentVideos.filter(v => v.sold);
-            return soldVideos.length > 0 ? (
-              <div className="space-y-3">
-                {soldVideos.map((v) => (
-                  <div key={v.id} className="flex items-center gap-4 p-3 rounded-xl bg-muted/30">
-                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
-                      <DollarSign className="w-5 h-5 text-green-500" />
+          {transactions.length > 0 ? (
+            <div className="space-y-3">
+              {transactions.map((t) => {
+                const isSold = t.type === "sold";
+                return (
+                  <div key={t.id} className="flex items-center gap-4 p-3 rounded-xl bg-muted/30">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isSold ? "bg-green-500/10" : "bg-blue-500/10"}`}>
+                      {isSold ? (
+                        <DollarSign className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <ShoppingCart className="w-5 h-5 text-blue-500" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{v.title}</p>
+                      <p className="font-medium text-sm truncate">{t.title || "Untitled"}</p>
                       <p className="text-xs text-muted-foreground">
-                        Sold · {new Date(v.updated_at || v.created_at).toLocaleDateString()}
+                        {isSold ? "Sold" : "Purchased"} · {new Date(t.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-green-500">
-                      +${Number(v.price).toFixed(2)}
+                    <span className={`text-sm font-semibold ${isSold ? "text-green-500" : "text-blue-500"}`}>
+                      {isSold ? "+" : "-"}${Number(t.amount).toFixed(2)}
                     </span>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Clock className="w-8 h-8 text-muted-foreground" />
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Clock className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="font-semibold mb-1">No transactions yet</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  When buyers purchase your media, transactions will appear here with payment details and download history.
-                </p>
-              </div>
-            );
-          })()}
+              <h3 className="font-semibold mb-1">No transactions yet</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                When you buy or sell media, transactions will appear here.
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>

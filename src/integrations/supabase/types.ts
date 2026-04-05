@@ -194,6 +194,47 @@ export type Database = {
         }
         Relationships: []
       }
+      purchases: {
+        Row: {
+          amount: number
+          buyer_email: string
+          buyer_user_id: string | null
+          created_at: string
+          id: string
+          seller_user_id: string
+          stripe_session_id: string | null
+          video_id: string
+        }
+        Insert: {
+          amount?: number
+          buyer_email: string
+          buyer_user_id?: string | null
+          created_at?: string
+          id?: string
+          seller_user_id: string
+          stripe_session_id?: string | null
+          video_id: string
+        }
+        Update: {
+          amount?: number
+          buyer_email?: string
+          buyer_user_id?: string | null
+          created_at?: string
+          id?: string
+          seller_user_id?: string
+          stripe_session_id?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_visits: {
         Row: {
           id: string
