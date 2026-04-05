@@ -368,7 +368,7 @@ export const VideoPaywall = ({
                     size="sm"
                     className="gap-1.5"
                     onClick={() => {
-                      const url = `${window.location.origin}/video/${videoId}`;
+                      const url = `https://mediamuleco.com/video/${videoId}`;
                       navigator.clipboard.writeText(url);
                       toast.success("Purchase link copied!");
                     }}
