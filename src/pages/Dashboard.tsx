@@ -105,9 +105,32 @@ const Dashboard = () => {
       }
     };
     
+    const fetchTransactions = async () => {
+      // Sold videos (as seller)
+      const { data: sales } = await supabase
+        .from("purchases")
+        .select("id, video_id, amount, created_at, videos!inner(title)")
+        .eq("seller_user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      // Bought videos (as buyer)
+      const { data: bought } = await supabase
+        .from("purchases")
+        .select("id, video_id, amount, created_at, videos!inner(title)")
+        .eq("buyer_user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      const allTx = [
+        ...(sales || []).map((t: any) => ({ ...t, type: "sold" as const, title: t.videos?.title })),
+        ...(bought || []).map((t: any) => ({ ...t, type: "bought" as const, title: t.videos?.title })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setTransactions(allTx);
+    };
+
     fetchProfile();
     fetchVideos();
     fetchFolders();
+    fetchTransactions();
 
     // Check Connect onboarding status
     const checkConnect = async () => {
