@@ -29,8 +29,17 @@ serve(async (req) => {
   );
 
   try {
-    const { videoId } = await req.json();
+    const { videoId, buyerEmail } = await req.json();
     if (!videoId) throw new Error("Missing videoId");
+
+    // Try to get authenticated buyer
+    let buyerUserId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData } = await supabaseClient.auth.getUser(token);
+      if (userData?.user) buyerUserId = userData.user.id;
+    }
 
     console.log("Processing payment for video:", videoId);
 
