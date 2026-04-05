@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { FolderSidebar, type MediaFolder } from "@/components/folders/FolderSidebar";
+import { ShoppingCart } from "lucide-react";
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
