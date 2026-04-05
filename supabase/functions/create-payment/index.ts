@@ -116,11 +116,19 @@ serve(async (req) => {
       },
     });
 
-    // Mark video as sold and track accumulated fees
-    await supabaseClient
-      .from("videos")
-      .update({ sold: true })
-      .eq("id", video.id);
+    // Mark video as sold, record the purchase, and track accumulated fees
+    const purchaseEmail = buyerEmail || (buyerUserId ? "authenticated-user" : "guest");
+    await Promise.all([
+      supabaseClient.from("videos").update({ sold: true }).eq("id", video.id),
+      supabaseClient.from("purchases").insert({
+        video_id: video.id,
+        buyer_user_id: buyerUserId,
+        buyer_email: purchaseEmail,
+        seller_user_id: video.user_id,
+        amount: video.price,
+        stripe_session_id: session.id,
+      }),
+    ]);
 
     // Increment accumulated fees for fee-based upgrade tracking
     const feeAmount = platformFee / 100;
