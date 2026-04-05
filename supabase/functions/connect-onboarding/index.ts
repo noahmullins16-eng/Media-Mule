@@ -31,7 +31,7 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const origin = req.headers.get("origin") || "https://pay-for-play-vid.lovable.app";
+    const origin = req.headers.get("origin") || "https://mediamuleco.com";
 
     // Check if creator already has a Connect account
     const { data: profile } = await supabaseClient
