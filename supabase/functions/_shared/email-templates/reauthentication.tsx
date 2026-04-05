@@ -25,7 +25,7 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
     <Body style={main}>
       <Container style={container}>
         <Img
-          src="https://fyocavwmovqrctcxbkvs.supabase.co/storage/v1/object/public/email-assets/logo.png"
+          src="https://mediamuleco.com/favicon.png"
           alt="Media Mule"
           width="48"
           height="48"

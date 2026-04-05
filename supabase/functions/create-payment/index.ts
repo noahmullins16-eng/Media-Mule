@@ -47,7 +47,7 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const origin = req.headers.get("origin") || "https://pay-for-play-vid.lovable.app";
+    const origin = req.headers.get("origin") || "https://mediamuleco.com";
 
     // Fetch video
     const { data: video, error: videoError } = await supabaseClient
