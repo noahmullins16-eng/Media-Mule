@@ -329,6 +329,10 @@ export const VideoUploader = () => {
 
         setUploadProgress(30);
 
+        // Generate thumbnail from the primary file (prefer image/video)
+        const thumbFile = files.find((f) => f.type === "image") || files.find((f) => f.type === "video") || primaryFile;
+        const thumbnailUrl = await uploadThumbnail(thumbFile.file, thumbFile.type, user.id);
+
         const { data: videoRecord, error: dbError } = await supabase
           .from("videos")
           .insert({
@@ -341,6 +345,7 @@ export const VideoUploader = () => {
             status: "published",
             watermarks_enabled: watermarksEnabled,
             folder_id: folderId || null,
+            thumbnail_url: thumbnailUrl,
           })
           .select("id")
           .single();
