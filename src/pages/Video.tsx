@@ -95,7 +95,7 @@ const Video = () => {
         const { data: wmUrl } = supabase.storage
           .from("watermarks")
           .getPublicUrl(profileData.custom_watermark_path);
-        customWatermarkUrl = wmUrl?.publicUrl || null;
+        customWatermarkUrl = wmUrl?.publicUrl ? `${wmUrl.publicUrl}?t=${Date.now()}` : null;
       }
 
       setVideo({
