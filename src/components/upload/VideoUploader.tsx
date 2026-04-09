@@ -467,7 +467,7 @@ export const VideoUploader = () => {
           <label>
             <input
               type="file"
-              accept="video/*,image/*,audio/*,.mp3,.wav"
+              accept="video/*,image/*,audio/*,.mp3,.wav,.m4a"
               onChange={handleFileChange}
               className="hidden"
               multiple
