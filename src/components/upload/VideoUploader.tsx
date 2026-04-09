@@ -623,6 +623,56 @@ export const VideoUploader = () => {
                       </SelectContent>
                     </Select>
                   )}
+
+                  {/* Preview image for audio files */}
+                  {uploadFile.type === "audio" && (
+                    <div className="rounded-lg border border-border p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Image className="w-4 h-4 text-accent" />
+                        <Label className="text-xs font-medium">Preview Image (optional)</Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Add cover art or imagery for your audio</p>
+                      {uploadFile.previewImage ? (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={URL.createObjectURL(uploadFile.previewImage)}
+                            alt="Preview"
+                            className="w-16 h-16 rounded-lg object-cover"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs truncate">{uploadFile.previewImage.name}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateFileDetail(uploadFile.id, "previewImage", null)}
+                            disabled={isUploading}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const img = e.target.files?.[0];
+                              if (img) updateFileDetail(uploadFile.id, "previewImage", img);
+                              e.target.value = "";
+                            }}
+                            disabled={isUploading}
+                          />
+                          <Button type="button" variant="outline" size="sm" asChild>
+                            <span className="text-xs">Choose Image</span>
+                          </Button>
+                        </label>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
