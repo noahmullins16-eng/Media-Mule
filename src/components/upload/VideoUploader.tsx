@@ -334,10 +334,12 @@ export const VideoUploader = () => {
 
         setUploadProgress(30);
 
-        // Generate thumbnail from the primary file (prefer image/video)
+        // Generate thumbnail: prefer bundle preview image, then image file, then video, then audio preview
         const thumbFile = files.find((f) => f.type === "image") || files.find((f) => f.type === "video") || primaryFile;
-        const audioPreview = files.find((f) => f.type === "audio" && f.previewImage)?.previewImage;
-        const thumbnailUrl = await uploadThumbnail(thumbFile.file, thumbFile.type, user.id, audioPreview);
+        const previewImg = bundlePreviewImage || files.find((f) => f.type === "audio" && f.previewImage)?.previewImage;
+        const thumbnailUrl = previewImg
+          ? await uploadThumbnail(previewImg, "image", user.id)
+          : await uploadThumbnail(thumbFile.file, thumbFile.type, user.id);
 
         const { data: videoRecord, error: dbError } = await supabase
           .from("videos")
