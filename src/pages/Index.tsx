@@ -59,10 +59,7 @@ const Index = () => {
               <Link to="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
               <Link to="/how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How It Works</Link>
               {user && (
-                <>
                   <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
-                  <Link to="/my-media" className="text-sm text-muted-foreground hover:text-foreground transition-colors">My Media</Link>
-                </>
               )}
             </nav>
             <div className="flex items-center gap-3">

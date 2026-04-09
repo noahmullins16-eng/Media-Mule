@@ -322,7 +322,7 @@ export const VideoUploader = () => {
           }}>
             Upload Another
           </Button>
-          <Button variant="heroOutline" onClick={() => navigate("/my-media")}>
+          <Button variant="heroOutline" onClick={() => navigate("/dashboard")}>
             View Your Content
           </Button>
         </div>
