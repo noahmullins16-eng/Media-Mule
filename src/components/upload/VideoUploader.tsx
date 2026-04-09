@@ -27,6 +27,7 @@ interface UploadFile {
   pricingEnabled: boolean;
   watermarksEnabled: boolean;
   folderId: string | null;
+  previewImage: File | null;
 }
 
 type UploadMode = "bundle" | "individual";
