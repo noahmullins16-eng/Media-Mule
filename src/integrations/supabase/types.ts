@@ -397,7 +397,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      creator_profiles_public: {
+        Row: {
+          custom_watermark_path: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          custom_watermark_path?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          custom_watermark_path?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       delete_email: {
