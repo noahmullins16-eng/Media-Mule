@@ -396,29 +396,25 @@ export const VideoUploader = () => {
         </div>
       </div>
 
-      {/* Upload Mode Checkbox */}
+      {/* Upload Mode Toggle */}
       {files.length > 1 && (
-        <div className="rounded-lg border-2 border-border p-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className={cn("text-sm font-semibold transition-colors", uploadMode === "individual" ? "text-foreground" : "text-muted-foreground")}>
-              📄 Individual
-            </span>
-            <span className={cn("text-sm font-semibold transition-colors", uploadMode === "bundle" ? "text-foreground" : "text-muted-foreground")}>
-              📦 Bundle
-            </span>
+        <div className="flex items-center justify-between rounded-lg border border-border p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <Layers className="w-5 h-5 text-accent" />
+            <div>
+              <Label htmlFor="bundle-toggle" className="text-sm font-medium">Bundle as One Listing</Label>
+              <p className="text-xs text-muted-foreground">
+                {uploadMode === "bundle"
+                  ? "All files will be grouped as a single listing"
+                  : "Each file will become its own separate listing"}
+              </p>
+            </div>
           </div>
-          <Slider
-            value={[uploadMode === "bundle" ? 1 : 0]}
-            onValueChange={([v]) => setUploadMode(v === 1 ? "bundle" : "individual")}
-            max={1}
-            step={1}
-            className="cursor-pointer"
+          <Switch
+            id="bundle-toggle"
+            checked={uploadMode === "bundle"}
+            onCheckedChange={(checked) => setUploadMode(checked ? "bundle" : "individual")}
           />
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            {uploadMode === "bundle"
-              ? "All files will be grouped as a single listing"
-              : "Each file will become its own separate listing"}
-          </p>
         </div>
       )}
 
