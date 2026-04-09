@@ -51,6 +51,7 @@ export const VideoUploader = () => {
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
+  const [bundlePreviewImage, setBundlePreviewImage] = useState<File | null>(null);
 
   useEffect(() => {
     if (!user) return;
