@@ -148,18 +148,22 @@ export const WatermarkUploader = ({ onWatermarkUrl }: WatermarkUploaderProps) =>
               Saved to profile
             </div>
             <div className="flex gap-2">
-              <label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleUpload}
-                  className="hidden"
-                  disabled={uploading}
-                />
-                <Button type="button" variant="outline" size="sm" asChild disabled={uploading}>
-                  <span>{uploading ? "Uploading..." : "Replace"}</span>
-                </Button>
-              </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+                onClick={() => document.getElementById("watermark-replace-input")?.click()}
+              >
+                {uploading ? "Uploading..." : "Replace"}
+              </Button>
+              <input
+                id="watermark-replace-input"
+                type="file"
+                accept="image/*"
+                onChange={handleUpload}
+                className="hidden"
+              />
               <Button type="button" variant="ghost" size="sm" onClick={handleRemove}>
                 <X className="w-3.5 h-3.5 mr-1" />
                 Remove
