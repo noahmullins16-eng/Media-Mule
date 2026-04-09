@@ -17,7 +17,7 @@ import { WatermarkUploader } from "./WatermarkUploader";
 interface UploadFile {
   id: string;
   file: File;
-  type: "video" | "image";
+  type: "video" | "image" | "audio";
 }
 
 export const VideoUploader = () => {
