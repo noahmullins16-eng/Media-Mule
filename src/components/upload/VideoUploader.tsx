@@ -21,6 +21,10 @@ interface UploadFile {
   type: "video" | "image" | "audio";
   title: string;
   description: string;
+  price: string;
+  pricingEnabled: boolean;
+  watermarksEnabled: boolean;
+  folderId: string | null;
 }
 
 type UploadMode = "bundle" | "individual";
@@ -93,6 +97,10 @@ export const VideoUploader = () => {
           type: getFileType(f),
           title: nameWithoutExt,
           description: "",
+          price: "",
+          pricingEnabled: true,
+          watermarksEnabled: true,
+          folderId: null,
         });
       }
     }
@@ -101,7 +109,7 @@ export const VideoUploader = () => {
     }
   }, [tierConfig]);
 
-  const updateFileDetail = (id: string, field: "title" | "description", value: string) => {
+  const updateFileDetail = (id: string, field: keyof UploadFile, value: any) => {
     setFiles((prev) => prev.map((f) => f.id === id ? { ...f, [field]: value } : f));
   };
 
@@ -135,7 +143,7 @@ export const VideoUploader = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number) => {
+  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null) => {
     if (!user) throw new Error("Not authenticated");
     const ext = uploadFile.file.name.split(".").pop();
     const filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -155,8 +163,8 @@ export const VideoUploader = () => {
         file_path: filePath,
         file_size: uploadFile.file.size,
         status: "published",
-        watermarks_enabled: watermarksEnabled,
-        folder_id: folderId || null,
+        watermarks_enabled: fileWatermarks,
+        folder_id: fileFolderId || null,
       })
       .select("id")
       .single();
@@ -200,10 +208,20 @@ export const VideoUploader = () => {
         toast.error(`Please enter a title for "${missingTitle.file.name}"`);
         return;
       }
+      // Validate per-file prices
+      for (const f of files) {
+        if (f.pricingEnabled) {
+          const p = f.price ? parseFloat(f.price) : 0;
+          if (!f.price || isNaN(p) || p < 0.99) {
+            toast.error(`Price for "${f.title}" must be at least $0.99 or disable pricing`);
+            return;
+          }
+        }
+      }
     }
 
     const priceNum = price ? parseFloat(price) : 0;
-    if (price && (isNaN(priceNum) || priceNum < 0.99)) {
+    if (uploadMode === "bundle" && price && (isNaN(priceNum) || priceNum < 0.99)) {
       toast.error("Price must be at least $0.99 or left empty for storage only");
       return;
     }
@@ -213,10 +231,10 @@ export const VideoUploader = () => {
 
     try {
       if (uploadMode === "individual") {
-        // Each file becomes its own listing
         for (let i = 0; i < files.length; i++) {
           const uploadFile = files[i];
-          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, priceNum);
+          const filePrice = uploadFile.pricingEnabled ? parseFloat(uploadFile.price) || 0 : 0;
+          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, filePrice, uploadFile.watermarksEnabled, uploadFile.folderId);
           setUploadProgress(Math.round(((i + 1) / files.length) * 100));
         }
         setUploadedCount(files.length);
@@ -438,9 +456,9 @@ export const VideoUploader = () => {
                 </Button>
               </div>
 
-              {/* Individual title/description fields */}
+              {/* Individual settings per file */}
               {uploadMode === "individual" && (
-                <div className="mt-3 pl-[52px] space-y-2">
+                <div className="mt-3 pl-[52px] space-y-3">
                   <Input
                     value={uploadFile.title}
                     onChange={(e) => updateFileDetail(uploadFile.id, "title", e.target.value)}
@@ -456,6 +474,68 @@ export const VideoUploader = () => {
                     className="bg-background/50 min-h-[60px] text-sm"
                     disabled={isUploading}
                   />
+
+                  {/* Per-file pricing */}
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-accent" />
+                      <Label className="text-xs font-medium">Set a Price</Label>
+                    </div>
+                    <Switch
+                      checked={uploadFile.pricingEnabled}
+                      onCheckedChange={(checked) => {
+                        updateFileDetail(uploadFile.id, "pricingEnabled", checked);
+                        if (!checked) updateFileDetail(uploadFile.id, "price", "");
+                      }}
+                      disabled={isUploading}
+                    />
+                  </div>
+                  {uploadFile.pricingEnabled && (
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        min="0.99"
+                        step="0.01"
+                        value={uploadFile.price}
+                        onChange={(e) => updateFileDetail(uploadFile.id, "price", e.target.value)}
+                        placeholder="9.99"
+                        className="bg-background/50 pl-9 h-9 text-sm"
+                        disabled={isUploading}
+                      />
+                    </div>
+                  )}
+
+                  {/* Per-file watermark */}
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-accent" />
+                      <Label className="text-xs font-medium">Watermark Protection</Label>
+                    </div>
+                    <Switch
+                      checked={uploadFile.watermarksEnabled}
+                      onCheckedChange={(checked) => updateFileDetail(uploadFile.id, "watermarksEnabled", checked)}
+                      disabled={isUploading}
+                    />
+                  </div>
+
+                  {/* Per-file folder */}
+                  {folders.length > 0 && (
+                    <Select value={uploadFile.folderId || "none"} onValueChange={(v) => updateFileDetail(uploadFile.id, "folderId", v === "none" ? null : v)}>
+                      <SelectTrigger className="bg-background/50 h-9 text-sm">
+                        <div className="flex items-center gap-2">
+                          <FolderOpen className="w-4 h-4 text-muted-foreground" />
+                          <SelectValue placeholder="No folder" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No folder</SelectItem>
+                        {folders.map((folder) => (
+                          <SelectItem key={folder.id} value={folder.id}>{folder.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
             </div>
@@ -506,7 +586,7 @@ export const VideoUploader = () => {
           </>
         )}
 
-        {folders.length > 0 && (
+        {uploadMode !== "individual" && folders.length > 0 && (
           <div>
             <label className="block text-sm font-medium mb-2">Folder (optional)</label>
             <Select value={folderId || "none"} onValueChange={(v) => setFolderId(v === "none" ? null : v)}>
@@ -525,64 +605,67 @@ export const VideoUploader = () => {
             </Select>
           </div>
         )}
-        <div className="flex items-center justify-between rounded-lg border border-border p-4">
-          <div className="flex items-center gap-3">
-            <DollarSign className="w-5 h-5 text-accent" />
-            <div>
-              <Label htmlFor="pricing-toggle" className="text-sm font-medium">Set a Price</Label>
-              <p className="text-xs text-muted-foreground">
-                {uploadMode === "individual" ? "Applied to all listings" : "Disable to use as storage only (not for sale)"}
-              </p>
-            </div>
-          </div>
-          <Switch
-            id="pricing-toggle"
-            checked={pricingEnabled}
-            onCheckedChange={(checked) => {
-              setPricingEnabled(checked);
-              if (!checked) setPrice("");
-            }}
-            disabled={isUploading}
-          />
-        </div>
 
-        {pricingEnabled && (
-          <div>
-            <label className="block text-sm font-medium mb-2">Price (USD)</label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="number"
-                min="0.99"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="9.99"
-                className="bg-background/50 pl-10"
+        {uploadMode !== "individual" && (
+          <>
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div className="flex items-center gap-3">
+                <DollarSign className="w-5 h-5 text-accent" />
+                <div>
+                  <Label htmlFor="pricing-toggle" className="text-sm font-medium">Set a Price</Label>
+                  <p className="text-xs text-muted-foreground">Disable to use as storage only (not for sale)</p>
+                </div>
+              </div>
+              <Switch
+                id="pricing-toggle"
+                checked={pricingEnabled}
+                onCheckedChange={(checked) => {
+                  setPricingEnabled(checked);
+                  if (!checked) setPrice("");
+                }}
                 disabled={isUploading}
               />
             </div>
-          </div>
-        )}
 
-        <div className="flex items-center justify-between rounded-lg border border-border p-4">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-accent" />
-            <div>
-              <Label htmlFor="watermarks" className="text-sm font-medium">Watermark Protection</Label>
-              <p className="text-xs text-muted-foreground">Overlay watermarks on video previews to deter piracy</p>
+            {pricingEnabled && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Price (USD)</label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    min="0.99"
+                    step="0.01"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="9.99"
+                    className="bg-background/50 pl-10"
+                    disabled={isUploading}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-accent" />
+                <div>
+                  <Label htmlFor="watermarks" className="text-sm font-medium">Watermark Protection</Label>
+                  <p className="text-xs text-muted-foreground">Overlay watermarks on video previews to deter piracy</p>
+                </div>
+              </div>
+              <Switch
+                id="watermarks"
+                checked={watermarksEnabled}
+                onCheckedChange={setWatermarksEnabled}
+                disabled={isUploading}
+              />
             </div>
-          </div>
-          <Switch
-            id="watermarks"
-            checked={watermarksEnabled}
-            onCheckedChange={setWatermarksEnabled}
-            disabled={isUploading}
-          />
-        </div>
 
-        {watermarksEnabled && (
-          <WatermarkUploader onWatermarkUrl={setCustomWatermarkUrl} />
+            {watermarksEnabled && (
+              <WatermarkUploader onWatermarkUrl={setCustomWatermarkUrl} />
+            )}
+          </>
         )}
       </div>
 
