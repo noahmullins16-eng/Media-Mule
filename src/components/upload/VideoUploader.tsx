@@ -60,16 +60,10 @@ export const VideoUploader = () => {
   };
 
   const validateFile = (f: File): boolean => {
-    if (!f.type.startsWith("video/") && !f.type.startsWith("image/") && !f.type.startsWith("audio/")) {
-      toast.error(`"${f.name}" is not a supported file type (video, image, or audio)`);
-      return false;
-    }
-    // Also accept common audio extensions that may have wrong MIME type
     const ext = f.name.split(".").pop()?.toLowerCase();
-    if (!f.type.startsWith("video/") && !f.type.startsWith("image/") && !f.type.startsWith("audio/") && !["mp3", "wav"].includes(ext || "")) {
-      toast.error(`"${f.name}" is not a supported file type`);
-      return false;
-    }
+    const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav"].includes(ext || "");
+    if (!isSupported) {
+      toast.error(`"${f.name}" is not a supported file type (video, image, or audio)`);
       return false;
     }
     if (f.size > tierConfig.maxFileSize) {
