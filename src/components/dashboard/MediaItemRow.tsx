@@ -109,7 +109,13 @@ export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRo
         e.dataTransfer.setData("text/video-id", video.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      className="glass-card p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 cursor-grab active:cursor-grabbing"
+      onClick={(e) => {
+        // Don't navigate if clicking on a button, switch, select, or other interactive element
+        const target = e.target as HTMLElement;
+        if (target.closest("button, [role='combobox'], [role='switch'], [data-radix-collection-item]")) return;
+        navigate(`/preview/${video.id}`);
+      }}
+      className="glass-card p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 cursor-pointer active:cursor-grabbing"
     >
       {thumbnail ? (
         <img src={thumbnail} alt={video.title} className="w-24 h-14 rounded-lg object-cover shrink-0" />
