@@ -61,6 +61,7 @@ export const FolderSidebar = ({
   const [editName, setEditName] = useState("");
   const [dragOverId, setDragOverId] = useState<string | "all" | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
 
   const tree = buildTree(folders);
 
