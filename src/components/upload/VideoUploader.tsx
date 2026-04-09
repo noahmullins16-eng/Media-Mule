@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -396,16 +397,18 @@ export const VideoUploader = () => {
 
       {/* Upload Mode Checkbox */}
       {files.length > 1 && (
-        <div className="flex items-start gap-3 rounded-lg border border-border p-4 mb-4">
-          <Checkbox
-            id="bundle-mode"
-            checked={uploadMode === "bundle"}
-            onCheckedChange={(checked) => setUploadMode(checked ? "bundle" : "individual")}
-            className="mt-0.5"
-          />
+        <div
+          className={cn(
+            "flex items-center justify-between rounded-lg border-2 p-4 mb-4 cursor-pointer transition-all",
+            uploadMode === "bundle"
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-muted-foreground/50"
+          )}
+          onClick={() => setUploadMode(uploadMode === "bundle" ? "individual" : "bundle")}
+        >
           <div>
-            <Label htmlFor="bundle-mode" className="text-sm font-medium cursor-pointer">
-              Bundle files into one listing
+            <Label htmlFor="bundle-mode" className="text-sm font-semibold cursor-pointer">
+              {uploadMode === "bundle" ? "📦 Bundled as one listing" : "📄 Individual listings"}
             </Label>
             <p className="text-xs text-muted-foreground mt-0.5">
               {uploadMode === "bundle"
@@ -413,6 +416,11 @@ export const VideoUploader = () => {
                 : "Each file will become its own separate listing"}
             </p>
           </div>
+          <Switch
+            id="bundle-mode"
+            checked={uploadMode === "bundle"}
+            onCheckedChange={(checked) => setUploadMode(checked ? "bundle" : "individual")}
+          />
         </div>
       )}
 
