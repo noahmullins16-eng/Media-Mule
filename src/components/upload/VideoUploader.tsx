@@ -70,13 +70,13 @@ export const VideoUploader = () => {
 
   const getFileType = (file: File): "video" | "image" | "audio" => {
     if (file.type.startsWith("video/")) return "video";
-    if (file.type.startsWith("audio/") || ["mp3", "wav"].includes(file.name.split(".").pop()?.toLowerCase() || "")) return "audio";
+    if (file.type.startsWith("audio/") || ["mp3", "wav", "m4a"].includes(file.name.split(".").pop()?.toLowerCase() || "")) return "audio";
     return "image";
   };
 
   const validateFile = (f: File): boolean => {
     const ext = f.name.split(".").pop()?.toLowerCase();
-    const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav"].includes(ext || "");
+    const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav", "m4a"].includes(ext || "");
     if (!isSupported) {
       toast.error(`"${f.name}" is not a supported file type (video, image, or audio)`);
       return false;
@@ -467,7 +467,7 @@ export const VideoUploader = () => {
           <label>
             <input
               type="file"
-              accept="video/*,image/*,audio/*,.mp3,.wav"
+              accept="video/*,image/*,audio/*,.mp3,.wav,.m4a"
               onChange={handleFileChange}
               className="hidden"
               multiple
