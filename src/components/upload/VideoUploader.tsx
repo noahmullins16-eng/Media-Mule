@@ -21,6 +21,10 @@ interface UploadFile {
   type: "video" | "image" | "audio";
   title: string;
   description: string;
+  price: string;
+  pricingEnabled: boolean;
+  watermarksEnabled: boolean;
+  folderId: string | null;
 }
 
 type UploadMode = "bundle" | "individual";
