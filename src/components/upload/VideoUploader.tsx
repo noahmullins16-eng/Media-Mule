@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical, FolderOpen, Music, Layers, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -375,33 +376,25 @@ export const VideoUploader = () => {
         </div>
       </div>
 
-      {/* Upload Mode Toggle */}
+      {/* Upload Mode Checkbox */}
       {files.length > 1 && (
-        <div className="flex items-center gap-3 rounded-lg border border-border p-4 mb-4">
-          <div className="flex items-center gap-3 flex-1">
-            {uploadMode === "bundle" ? (
-              <Layers className="w-5 h-5 text-accent" />
-            ) : (
-              <FileText className="w-5 h-5 text-accent" />
-            )}
-            <div>
-              <Label className="text-sm font-medium">Upload Mode</Label>
-              <p className="text-xs text-muted-foreground">
-                {uploadMode === "bundle"
-                  ? "All files grouped as one listing"
-                  : "Each file becomes its own listing"}
-              </p>
-            </div>
+        <div className="flex items-start gap-3 rounded-lg border border-border p-4 mb-4">
+          <Checkbox
+            id="bundle-mode"
+            checked={uploadMode === "bundle"}
+            onCheckedChange={(checked) => setUploadMode(checked ? "bundle" : "individual")}
+            className="mt-0.5"
+          />
+          <div>
+            <Label htmlFor="bundle-mode" className="text-sm font-medium cursor-pointer">
+              Bundle files into one listing
+            </Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {uploadMode === "bundle"
+                ? "All files will be grouped as a single listing"
+                : "Each file will become its own separate listing"}
+            </p>
           </div>
-          <Select value={uploadMode} onValueChange={(v) => setUploadMode(v as UploadMode)}>
-            <SelectTrigger className="w-[160px] bg-background/50">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="bundle">Bundle</SelectItem>
-              <SelectItem value="individual">Individual</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       )}
 
