@@ -145,6 +145,78 @@ export const VideoUploader = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
+  const generateThumbnail = async (file: File, fileType: "video" | "image" | "audio"): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      if (fileType === "image") {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX = 480;
+          const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.7);
+          } else {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = URL.createObjectURL(file);
+      } else if (fileType === "video") {
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        video.muted = true;
+        video.playsInline = true;
+        video.onloadeddata = () => {
+          video.currentTime = Math.min(1, video.duration / 4);
+        };
+        video.onseeked = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.min(video.videoWidth, 480);
+          canvas.height = Math.min(video.videoHeight, 480);
+          const scale = Math.min(480 / video.videoWidth, 480 / video.videoHeight, 1);
+          canvas.width = video.videoWidth * scale;
+          canvas.height = video.videoHeight * scale;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.7);
+          } else {
+            resolve(null);
+          }
+          URL.revokeObjectURL(video.src);
+        };
+        video.onerror = () => resolve(null);
+        video.src = URL.createObjectURL(file);
+      } else {
+        resolve(null);
+      }
+    });
+  };
+
+  const uploadThumbnail = async (file: File, fileType: "video" | "image" | "audio", userId: string): Promise<string | null> => {
+    try {
+      const blob = await generateThumbnail(file, fileType);
+      if (!blob) return null;
+      const thumbPath = `${userId}/thumbs/${crypto.randomUUID()}.jpg`;
+      const { error } = await supabase.storage
+        .from("videos")
+        .upload(thumbPath, blob, { contentType: "image/jpeg", cacheControl: "3600", upsert: false });
+      if (error) {
+        console.warn("Thumbnail upload failed:", error.message);
+        return null;
+      }
+      const { data: urlData } = supabase.storage.from("videos").getPublicUrl(thumbPath);
+      return urlData?.publicUrl || null;
+    } catch (e) {
+      console.warn("Thumbnail generation failed:", e);
+      return null;
+    }
+  };
+
   const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null) => {
     if (!user) throw new Error("Not authenticated");
     const ext = uploadFile.file.name.split(".").pop();
@@ -154,6 +226,8 @@ export const VideoUploader = () => {
       .from("videos")
       .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
     if (uploadError) throw uploadError;
+
+    const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id);
 
     const { data: videoRecord, error: dbError } = await supabase
       .from("videos")
@@ -167,6 +241,7 @@ export const VideoUploader = () => {
         status: "published",
         watermarks_enabled: fileWatermarks,
         folder_id: fileFolderId || null,
+        thumbnail_url: thumbnailUrl,
       })
       .select("id")
       .single();
@@ -254,6 +329,10 @@ export const VideoUploader = () => {
 
         setUploadProgress(30);
 
+        // Generate thumbnail from the primary file (prefer image/video)
+        const thumbFile = files.find((f) => f.type === "image") || files.find((f) => f.type === "video") || primaryFile;
+        const thumbnailUrl = await uploadThumbnail(thumbFile.file, thumbFile.type, user.id);
+
         const { data: videoRecord, error: dbError } = await supabase
           .from("videos")
           .insert({
@@ -266,6 +345,7 @@ export const VideoUploader = () => {
             status: "published",
             watermarks_enabled: watermarksEnabled,
             folder_id: folderId || null,
+            thumbnail_url: thumbnailUrl,
           })
           .select("id")
           .single();
