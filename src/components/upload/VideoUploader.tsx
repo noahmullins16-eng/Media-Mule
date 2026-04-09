@@ -143,7 +143,7 @@ export const VideoUploader = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number) => {
+  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null) => {
     if (!user) throw new Error("Not authenticated");
     const ext = uploadFile.file.name.split(".").pop();
     const filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -163,8 +163,8 @@ export const VideoUploader = () => {
         file_path: filePath,
         file_size: uploadFile.file.size,
         status: "published",
-        watermarks_enabled: watermarksEnabled,
-        folder_id: folderId || null,
+        watermarks_enabled: fileWatermarks,
+        folder_id: fileFolderId || null,
       })
       .select("id")
       .single();
