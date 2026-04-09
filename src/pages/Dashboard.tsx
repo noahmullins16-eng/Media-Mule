@@ -410,7 +410,7 @@ const Dashboard = () => {
           {/* Recent Uploads with Folders */}
           <div className="glass-card p-6 lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display font-semibold text-lg">Recent Uploads</h2>
+              <h2 className="font-display font-semibold text-lg">Cloud Storage</h2>
               <Link to="/my-media" className="text-sm text-accent hover:underline">
                 View All
               </Link>
