@@ -199,9 +199,12 @@ export const VideoUploader = () => {
     });
   };
 
-  const uploadThumbnail = async (file: File, fileType: "video" | "image" | "audio", userId: string): Promise<string | null> => {
+  const uploadThumbnail = async (file: File, fileType: "video" | "image" | "audio", userId: string, previewImage?: File | null): Promise<string | null> => {
     try {
-      const blob = await generateThumbnail(file, fileType);
+      // For audio files, use the preview image if provided
+      const thumbSource = fileType === "audio" && previewImage ? previewImage : file;
+      const thumbType = fileType === "audio" && previewImage ? "image" as const : fileType;
+      const blob = await generateThumbnail(thumbSource, thumbType);
       if (!blob) return null;
       const thumbPath = `${userId}/thumbs/${crypto.randomUUID()}.jpg`;
       const { error } = await supabase.storage
