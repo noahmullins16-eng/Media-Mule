@@ -53,8 +53,10 @@ export const VideoUploader = () => {
 
   const tierConfig = TIER_CONFIG[tier];
 
-  const getFileType = (file: File): "video" | "image" => {
-    return file.type.startsWith("video/") ? "video" : "image";
+  const getFileType = (file: File): "video" | "image" | "audio" => {
+    if (file.type.startsWith("video/")) return "video";
+    if (file.type.startsWith("audio/")) return "audio";
+    return "image";
   };
 
   const validateFile = (f: File): boolean => {
