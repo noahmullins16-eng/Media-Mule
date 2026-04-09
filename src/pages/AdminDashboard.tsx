@@ -16,6 +16,7 @@ import {
   Eye,
   Globe,
 } from "lucide-react";
+import { EmailPreview } from "@/components/admin/EmailPreview";
 
 interface AdminAnalytics {
   total_users: number;
@@ -342,6 +343,11 @@ const AdminDashboard = () => {
           ) : (
             <p className="text-muted-foreground text-sm text-center py-8">No subscribers yet.</p>
           )}
+        </div>
+
+        {/* Email Templates Preview */}
+        <div className="mt-8">
+          <EmailPreview />
         </div>
       </main>
     </div>
