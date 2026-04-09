@@ -16,6 +16,7 @@ import {
   Eye,
   Globe,
 } from "lucide-react";
+import { EmailPreview } from "@/components/admin/EmailPreview";
 
 interface AdminAnalytics {
   total_users: number;
