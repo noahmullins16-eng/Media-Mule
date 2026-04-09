@@ -456,9 +456,9 @@ export const VideoUploader = () => {
                 </Button>
               </div>
 
-              {/* Individual title/description fields */}
+              {/* Individual settings per file */}
               {uploadMode === "individual" && (
-                <div className="mt-3 pl-[52px] space-y-2">
+                <div className="mt-3 pl-[52px] space-y-3">
                   <Input
                     value={uploadFile.title}
                     onChange={(e) => updateFileDetail(uploadFile.id, "title", e.target.value)}
@@ -474,6 +474,68 @@ export const VideoUploader = () => {
                     className="bg-background/50 min-h-[60px] text-sm"
                     disabled={isUploading}
                   />
+
+                  {/* Per-file pricing */}
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-accent" />
+                      <Label className="text-xs font-medium">Set a Price</Label>
+                    </div>
+                    <Switch
+                      checked={uploadFile.pricingEnabled}
+                      onCheckedChange={(checked) => {
+                        updateFileDetail(uploadFile.id, "pricingEnabled", checked);
+                        if (!checked) updateFileDetail(uploadFile.id, "price", "");
+                      }}
+                      disabled={isUploading}
+                    />
+                  </div>
+                  {uploadFile.pricingEnabled && (
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        min="0.99"
+                        step="0.01"
+                        value={uploadFile.price}
+                        onChange={(e) => updateFileDetail(uploadFile.id, "price", e.target.value)}
+                        placeholder="9.99"
+                        className="bg-background/50 pl-9 h-9 text-sm"
+                        disabled={isUploading}
+                      />
+                    </div>
+                  )}
+
+                  {/* Per-file watermark */}
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-accent" />
+                      <Label className="text-xs font-medium">Watermark Protection</Label>
+                    </div>
+                    <Switch
+                      checked={uploadFile.watermarksEnabled}
+                      onCheckedChange={(checked) => updateFileDetail(uploadFile.id, "watermarksEnabled", checked)}
+                      disabled={isUploading}
+                    />
+                  </div>
+
+                  {/* Per-file folder */}
+                  {folders.length > 0 && (
+                    <Select value={uploadFile.folderId || "none"} onValueChange={(v) => updateFileDetail(uploadFile.id, "folderId", v === "none" ? null : v)}>
+                      <SelectTrigger className="bg-background/50 h-9 text-sm">
+                        <div className="flex items-center gap-2">
+                          <FolderOpen className="w-4 h-4 text-muted-foreground" />
+                          <SelectValue placeholder="No folder" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No folder</SelectItem>
+                        {folders.map((folder) => (
+                          <SelectItem key={folder.id} value={folder.id}>{folder.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
             </div>
