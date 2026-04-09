@@ -29,7 +29,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
-      <Route path="/my-media" element={<MyVideos />} />
+      <Route path="/my-media" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/pricing/:tier" element={<PricingTier />} />
