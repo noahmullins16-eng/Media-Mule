@@ -76,7 +76,7 @@ export const VideoUploader = () => {
 
   const validateFile = (f: File): boolean => {
     const ext = f.name.split(".").pop()?.toLowerCase();
-    const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav"].includes(ext || "");
+    const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav", "m4a"].includes(ext || "");
     if (!isSupported) {
       toast.error(`"${f.name}" is not a supported file type (video, image, or audio)`);
       return false;
