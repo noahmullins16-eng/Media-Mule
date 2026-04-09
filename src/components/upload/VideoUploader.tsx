@@ -335,7 +335,8 @@ export const VideoUploader = () => {
 
         // Generate thumbnail from the primary file (prefer image/video)
         const thumbFile = files.find((f) => f.type === "image") || files.find((f) => f.type === "video") || primaryFile;
-        const thumbnailUrl = await uploadThumbnail(thumbFile.file, thumbFile.type, user.id);
+        const audioPreview = files.find((f) => f.type === "audio" && f.previewImage)?.previewImage;
+        const thumbnailUrl = await uploadThumbnail(thumbFile.file, thumbFile.type, user.id, audioPreview);
 
         const { data: videoRecord, error: dbError } = await supabase
           .from("videos")
