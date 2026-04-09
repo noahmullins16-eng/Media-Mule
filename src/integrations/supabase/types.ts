@@ -175,6 +175,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          parent_folder_id: string | null
           sort_order: number
           user_id: string
         }
@@ -182,6 +183,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          parent_folder_id?: string | null
           sort_order?: number
           user_id: string
         }
@@ -189,10 +191,19 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          parent_folder_id?: string | null
           sort_order?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "media_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "media_folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchases: {
         Row: {

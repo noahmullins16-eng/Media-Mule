@@ -27,7 +27,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { FolderSidebar, type MediaFolder } from "@/components/folders/FolderSidebar";
+import { FolderSidebar, type MediaFolder, buildTree, getDescendantIds } from "@/components/folders/FolderSidebar";
 import { ShoppingCart } from "lucide-react";
 import { MediaItemRow, type VideoItem } from "@/components/dashboard/MediaItemRow";
 import { WatermarkUploader } from "@/components/upload/WatermarkUploader";
@@ -158,7 +158,11 @@ const Dashboard = () => {
 
   const filteredVideos = activeFolderId === null
     ? videos
-    : videos.filter((v) => v.folder_id === activeFolderId);
+    : (() => {
+        const tree = buildTree(folders);
+        const folderIds = new Set([activeFolderId, ...getDescendantIds(activeFolderId, tree)]);
+        return videos.filter((v) => v.folder_id && folderIds.has(v.folder_id));
+      })();
 
   const handleVideoUpdate = (updated: VideoItem) => {
     setVideos((prev) => prev.map((v) => v.id === updated.id ? updated : v));
