@@ -226,16 +226,24 @@ export const FolderSidebar = ({
         ) : (
           <div className="group relative">
             <button
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/folder-id", folder.id);
+                setDraggingFolderId(folder.id);
+              }}
+              onDragEnd={() => setDraggingFolderId(null)}
               onClick={() => onSelectFolder(folder.id)}
               onDragOver={(e) => handleDragOver(e, folder.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, folder.id)}
               className={`w-full flex items-center gap-1.5 py-2 rounded-lg text-sm transition-colors ${
-                dragOverId === folder.id
-                  ? "bg-accent/25 ring-2 ring-accent/50"
-                  : activeFolderId === folder.id
-                    ? "bg-accent/15 text-accent font-medium"
-                    : "text-muted-foreground hover:bg-muted"
+                draggingFolderId === folder.id
+                  ? "opacity-50"
+                  : dragOverId === folder.id
+                    ? "bg-accent/25 ring-2 ring-accent/50"
+                    : activeFolderId === folder.id
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-muted-foreground hover:bg-muted"
               }`}
               style={{ paddingLeft, paddingRight: 12 }}
             >
