@@ -4,6 +4,7 @@ import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { resolveStorageAssetUrl } from "@/lib/media-thumbnails";
 import type { BundleFile } from "./Video";
 
 const VideoPreview = () => {
@@ -71,6 +72,8 @@ const VideoPreview = () => {
         if (signedData?.signedUrl) primaryVideoUrl = signedData.signedUrl;
       }
 
+      const resolvedThumbnail = await resolveStorageAssetUrl("videos", data.thumbnail_url);
+
       let customWatermarkUrl: string | null = null;
       let creatorUsername = "Media Mule Creator";
       const { data: profileData } = await supabase
@@ -90,7 +93,7 @@ const VideoPreview = () => {
       setVideo({
         title: data.title,
         description: data.description || "No description provided.",
-        thumbnail: data.thumbnail_url || "/placeholder.svg",
+        thumbnail: resolvedThumbnail || "/placeholder.svg",
         price: Number(data.price),
         duration: data.status === "published" ? "Available now" : "Processing",
         creator: creatorUsername,

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Video, Trash2, ExternalLink, Link2, ShieldCheck, FolderInput, Download } from "lucide-react";
 import { downloadMedia } from "@/lib/download-media";
+import { resolveMediaThumbnail } from "@/lib/media-thumbnails";
 import { toast } from "sonner";
 import { WatermarkUploader } from "@/components/upload/WatermarkUploader";
 import { FolderSidebar, type MediaFolder } from "@/components/folders/FolderSidebar";
@@ -21,6 +22,7 @@ interface VideoItem {
   file_size: number | null;
   status: string;
   created_at: string;
+  thumbnail_url: string | null;
   watermarks_enabled: boolean;
   folder_id: string | null;
 }
@@ -65,35 +67,27 @@ const MyVideos = () => {
     if (error) {
       toast.error("Failed to load videos");
     } else {
-      setVideos(data || []);
-      (data || []).forEach(async (v: any) => {
-        const { data: signedData } = await supabase.storage
-          .from("videos")
-          .createSignedUrl(v.file_path, 3600);
-        if (signedData?.signedUrl) generateThumbnail(v.id, signedData.signedUrl);
-      });
+      const nextVideos = (data || []) as VideoItem[];
+      setVideos(nextVideos);
+
+      const nextThumbnails: Record<string, string> = {};
+      await Promise.all(
+        nextVideos.map(async (video) => {
+          const resolvedThumbnail = await resolveMediaThumbnail({
+            thumbnailValue: video.thumbnail_url,
+            filePath: video.file_path,
+          });
+
+          if (resolvedThumbnail) {
+            nextThumbnails[video.id] = resolvedThumbnail;
+          }
+        })
+      );
+
+      setThumbnails(nextThumbnails);
     }
     setLoadingVideos(false);
   };
-
-  const generateThumbnail = useCallback((videoId: string, url: string) => {
-    const video = document.createElement("video");
-    video.crossOrigin = "anonymous";
-    video.muted = true;
-    video.preload = "metadata";
-    video.src = url;
-    video.addEventListener("loadeddata", () => { video.currentTime = 1; });
-    video.addEventListener("seeked", () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 160;
-      canvas.height = 90;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        setThumbnails((prev) => ({ ...prev, [videoId]: canvas.toDataURL("image/jpeg", 0.7) }));
-      }
-    });
-  }, []);
 
   const handleDelete = async (video: VideoItem) => {
     if (!confirm(`Delete "${video.title}"? This cannot be undone.`)) return;
