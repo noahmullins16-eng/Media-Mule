@@ -314,6 +314,8 @@ export const VideoUploader = () => {
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
                 {uploadFile.type === "video" ? (
                   <Video className="w-5 h-5 text-accent" />
+                ) : uploadFile.type === "audio" ? (
+                  <Music className="w-5 h-5 text-accent" />
                 ) : (
                   <Image className="w-5 h-5 text-accent" />
                 )}
