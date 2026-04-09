@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus, Video, Image, Package, Loader2 } from "lucide-react";
+import { Music } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
 import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
+import { AudioWatermark } from "./AudioWatermark";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { BundleFile } from "@/pages/Video";
@@ -47,6 +49,7 @@ export const VideoPaywall = ({
   sold = false,
 }: VideoPaywallProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [activeFileIndex, setActiveFileIndex] = useState(0);
@@ -58,6 +61,9 @@ export const VideoPaywall = ({
   const activeFile = bundleFiles[activeFileIndex];
   const activeUrl = activeFile?.signedUrl || videoUrl || "";
   const activeType = activeFile?.file_type || "video";
+  const isAudio = activeType === "audio";
+
+  const mediaRef = isAudio ? audioRef : videoRef;
 
   const sessionId = useMemo(
     () => `MM-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase(),
@@ -77,51 +83,57 @@ export const VideoPaywall = ({
   useScreenRecordingGuard(videoRef, isPlaying, handleRecordingDetected);
 
   const togglePlay = () => {
-    if (!videoRef.current) return;
+    const el = isAudio ? audioRef.current : videoRef.current;
+    if (!el) return;
     if (isPlaying) {
-      videoRef.current.pause();
+      el.pause();
     } else {
-      videoRef.current.play();
+      el.play();
     }
     setIsPlaying(!isPlaying);
   };
 
   const toggleMute = () => {
-    if (!videoRef.current) return;
+    const el = isAudio ? audioRef.current : videoRef.current;
+    if (!el) return;
     const newMuted = !isMuted;
-    videoRef.current.muted = newMuted;
+    el.muted = newMuted;
     setIsMuted(newMuted);
     if (newMuted) {
-      videoRef.current.volume = 0;
+      el.volume = 0;
     } else {
-      videoRef.current.volume = volume || 1;
+      el.volume = volume || 1;
     }
   };
 
   const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime);
+    const el = isAudio ? audioRef.current : videoRef.current;
+    if (!el) return;
+    setCurrentTime(el.currentTime);
   };
 
   const handleLoadedMetadata = () => {
-    if (!videoRef.current) return;
-    setVideoDuration(videoRef.current.duration);
+    const el = isAudio ? audioRef.current : videoRef.current;
+    if (!el) return;
+    setVideoDuration(el.duration);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!videoRef.current) return;
+    const el = isAudio ? audioRef.current : videoRef.current;
+    if (!el) return;
     const time = parseFloat(e.target.value);
-    videoRef.current.currentTime = time;
+    el.currentTime = time;
     setCurrentTime(time);
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!videoRef.current) return;
+    const el = isAudio ? audioRef.current : videoRef.current;
+    if (!el) return;
     const vol = parseFloat(e.target.value);
-    videoRef.current.volume = vol;
+    el.volume = vol;
     setVolume(vol);
     setIsMuted(vol === 0);
-    videoRef.current.muted = vol === 0;
+    el.muted = vol === 0;
   };
 
   const formatTime = (seconds: number) => {
@@ -131,8 +143,9 @@ export const VideoPaywall = ({
   };
 
   const switchFile = (index: number) => {
-    if (videoRef.current) {
-      videoRef.current.pause();
+    const el = isAudio ? audioRef.current : videoRef.current;
+    if (el) {
+      el.pause();
       setIsPlaying(false);
     }
     setActiveFileIndex(index);
@@ -147,7 +160,98 @@ export const VideoPaywall = ({
           onContextMenu={(e) => e.preventDefault()}
           style={{ userSelect: "none", WebkitUserSelect: "none" }}
         >
-          {activeUrl && activeType === "video" ? (
+          {activeUrl && isAudio ? (
+            <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-background via-muted/60 to-background">
+              {/* Hidden audio element */}
+              <audio
+                ref={audioRef}
+                src={activeUrl}
+                muted={isMuted}
+                onEnded={() => setIsPlaying(false)}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                preload="metadata"
+              />
+
+              {/* Audio watermark */}
+              {watermarksEnabled && <AudioWatermark isPlaying={isPlaying} intervalSeconds={15} />}
+
+              {/* Visual representation */}
+              <div className="flex flex-col items-center gap-4">
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-all ${isPlaying ? "bg-accent/20 animate-pulse" : "bg-accent/10"}`}>
+                  <Music className="w-12 h-12 text-accent" />
+                </div>
+                <p className="text-sm text-muted-foreground font-medium">{title}</p>
+                {watermarksEnabled && (
+                  <div className="flex items-center gap-1.5 text-xs text-accent/70">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Audio Watermark Active
+                  </div>
+                )}
+              </div>
+
+              {/* Play overlay */}
+              {!isPlaying && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                  onClick={togglePlay}
+                  style={{ zIndex: 26 }}
+                >
+                  <button className="w-20 h-20 rounded-full bg-accent/90 flex items-center justify-center shadow-lg shadow-accent/50 hover:scale-110 transition-transform">
+                    <Play className="w-10 h-10 text-accent-foreground ml-1" fill="currentColor" />
+                  </button>
+                </div>
+              )}
+
+              {/* Controls bar */}
+              <div
+                className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black/80 to-transparent flex flex-col gap-1.5"
+                style={{ zIndex: 27 }}
+              >
+                <input
+                  type="range"
+                  min={0}
+                  max={videoDuration || 0}
+                  step={0.1}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full h-1 appearance-none bg-white/20 rounded-full cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                  style={{
+                    background: videoDuration
+                      ? `linear-gradient(to right, hsl(var(--accent)) ${(currentTime / videoDuration) * 100}%, rgba(255,255,255,0.2) ${(currentTime / videoDuration) * 100}%)`
+                      : undefined,
+                  }}
+                />
+                <div className="flex items-center gap-2">
+                  <button onClick={togglePlay} className="text-white hover:text-accent transition-colors">
+                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" fill="currentColor" />}
+                  </button>
+                  <span className="text-xs text-white/70 font-mono min-w-[70px]">
+                    {formatTime(currentTime)} / {formatTime(videoDuration)}
+                  </span>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button onClick={toggleMute} className="text-white hover:text-accent transition-colors">
+                      {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      className="w-20 h-1 appearance-none bg-white/20 rounded-full cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-2.5 [&::-moz-range-thumb]:h-2.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, white ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%)`,
+                      }}
+                    />
+                    <ShieldCheck className="w-3.5 h-3.5 text-accent/70 ml-2" />
+                    <span className="text-xs text-white/70 font-medium">DRM</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : activeUrl && activeType === "video" ? (
             <>
               <video
                 ref={videoRef}
