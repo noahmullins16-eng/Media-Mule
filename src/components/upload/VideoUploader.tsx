@@ -397,30 +397,27 @@ export const VideoUploader = () => {
 
       {/* Upload Mode Checkbox */}
       {files.length > 1 && (
-        <div
-          className={cn(
-            "flex items-center justify-between rounded-lg border-2 p-4 mb-4 cursor-pointer transition-all",
-            uploadMode === "bundle"
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-muted-foreground/50"
-          )}
-          onClick={() => setUploadMode(uploadMode === "bundle" ? "individual" : "bundle")}
-        >
-          <div>
-            <Label htmlFor="bundle-mode" className="text-sm font-semibold cursor-pointer">
-              {uploadMode === "bundle" ? "📦 Bundled as one listing" : "📄 Individual listings"}
-            </Label>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {uploadMode === "bundle"
-                ? "All files will be grouped as a single listing"
-                : "Each file will become its own separate listing"}
-            </p>
+        <div className="rounded-lg border-2 border-border p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className={cn("text-sm font-semibold transition-colors", uploadMode === "individual" ? "text-foreground" : "text-muted-foreground")}>
+              📄 Individual
+            </span>
+            <span className={cn("text-sm font-semibold transition-colors", uploadMode === "bundle" ? "text-foreground" : "text-muted-foreground")}>
+              📦 Bundle
+            </span>
           </div>
-          <Switch
-            id="bundle-mode"
-            checked={uploadMode === "bundle"}
-            onCheckedChange={(checked) => setUploadMode(checked ? "bundle" : "individual")}
+          <Slider
+            value={[uploadMode === "bundle" ? 1 : 0]}
+            onValueChange={([v]) => setUploadMode(v === 1 ? "bundle" : "individual")}
+            max={1}
+            step={1}
+            className="cursor-pointer"
           />
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            {uploadMode === "bundle"
+              ? "All files will be grouped as a single listing"
+              : "Each file will become its own separate listing"}
+          </p>
         </div>
       )}
 
