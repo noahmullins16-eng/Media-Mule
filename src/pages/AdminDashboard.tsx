@@ -310,7 +310,7 @@ const AdminDashboard = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left">
-                    <th className="pb-3 font-medium text-muted-foreground">User ID</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Email</th>
                     <th className="pb-3 font-medium text-muted-foreground">Tier</th>
                     <th className="pb-3 font-medium text-muted-foreground">Videos</th>
                     <th className="pb-3 font-medium text-muted-foreground">Storage Used</th>
