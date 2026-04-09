@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical, FolderOpen } from "lucide-react";
+import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical, FolderOpen, Music } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import { WatermarkUploader } from "./WatermarkUploader";
 interface UploadFile {
   id: string;
   file: File;
-  type: "video" | "image";
+  type: "video" | "image" | "audio";
 }
 
 export const VideoUploader = () => {
@@ -53,13 +53,17 @@ export const VideoUploader = () => {
 
   const tierConfig = TIER_CONFIG[tier];
 
-  const getFileType = (file: File): "video" | "image" => {
-    return file.type.startsWith("video/") ? "video" : "image";
+  const getFileType = (file: File): "video" | "image" | "audio" => {
+    if (file.type.startsWith("video/")) return "video";
+    if (file.type.startsWith("audio/") || ["mp3", "wav"].includes(file.name.split(".").pop()?.toLowerCase() || "")) return "audio";
+    return "image";
   };
 
   const validateFile = (f: File): boolean => {
-    if (!f.type.startsWith("video/") && !f.type.startsWith("image/")) {
-      toast.error(`"${f.name}" is not a video or image file`);
+    const ext = f.name.split(".").pop()?.toLowerCase();
+    const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav"].includes(ext || "");
+    if (!isSupported) {
+      toast.error(`"${f.name}" is not a supported file type (video, image, or audio)`);
       return false;
     }
     if (f.size > tierConfig.maxFileSize) {
@@ -271,13 +275,13 @@ export const VideoUploader = () => {
         <div className="text-center">
           <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-lg font-medium mb-2">
-            Drag and drop your videos & images here
+            Drag and drop your videos, images & audio here
           </p>
           <p className="text-muted-foreground mb-4">or</p>
           <label>
             <input
               type="file"
-              accept="video/*,image/*"
+              accept="video/*,image/*,audio/*,.mp3,.wav"
               onChange={handleFileChange}
               className="hidden"
               multiple
@@ -287,7 +291,7 @@ export const VideoUploader = () => {
             </Button>
           </label>
           <p className="text-xs text-muted-foreground mt-3">
-            Videos & images · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
+            Videos, images & audio · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
             {tier !== "enterprise" && (
               <> · <Link to="/pricing" className="text-accent hover:underline">Upgrade for more</Link></>
             )}
@@ -310,6 +314,8 @@ export const VideoUploader = () => {
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
                 {uploadFile.type === "video" ? (
                   <Video className="w-5 h-5 text-accent" />
+                ) : uploadFile.type === "audio" ? (
+                  <Music className="w-5 h-5 text-accent" />
                 ) : (
                   <Image className="w-5 h-5 text-accent" />
                 )}
