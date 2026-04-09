@@ -27,7 +27,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { FolderSidebar, type MediaFolder } from "@/components/folders/FolderSidebar";
+import { FolderSidebar, type MediaFolder, buildTree, getDescendantIds } from "@/components/folders/FolderSidebar";
 import { ShoppingCart } from "lucide-react";
 import { MediaItemRow, type VideoItem } from "@/components/dashboard/MediaItemRow";
 import { WatermarkUploader } from "@/components/upload/WatermarkUploader";
