@@ -694,6 +694,61 @@ export const VideoUploader = () => {
         </div>
       )}
 
+      {/* Preview image for bundle with audio files */}
+      {uploadMode === "bundle" && files.some((f) => f.type === "audio") && (
+        <div className="rounded-lg border border-border p-4 mb-4 space-y-2">
+          <div className="flex items-center gap-3">
+            <Image className="w-5 h-5 text-accent" />
+            <div>
+              <Label className="text-sm font-medium">Preview Image (optional)</Label>
+              <p className="text-xs text-muted-foreground">Add cover art or imagery for your audio content</p>
+            </div>
+          </div>
+          {bundlePreviewImage ? (
+            <div className="flex items-center gap-3 mt-2">
+              <img
+                src={URL.createObjectURL(bundlePreviewImage)}
+                alt="Preview"
+                className="w-20 h-20 rounded-lg object-cover"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm truncate">{bundlePreviewImage.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(bundlePreviewImage.size / (1024 * 1024)).toFixed(2)} MB
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setBundlePreviewImage(null)}
+                disabled={isUploading}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <label className="mt-2 inline-block">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const img = e.target.files?.[0];
+                  if (img) setBundlePreviewImage(img);
+                  e.target.value = "";
+                }}
+                disabled={isUploading}
+              />
+              <Button type="button" variant="outline" size="sm" asChild>
+                <span>Choose Image</span>
+              </Button>
+            </label>
+          )}
+        </div>
+      )}
+
       {/* Details */}
       <div className="space-y-4">
         {/* Shared title/description for bundle mode */}
