@@ -344,6 +344,11 @@ const AdminDashboard = () => {
             <p className="text-muted-foreground text-sm text-center py-8">No subscribers yet.</p>
           )}
         </div>
+
+        {/* Email Templates Preview */}
+        <div className="mt-8">
+          <EmailPreview />
+        </div>
       </main>
     </div>
   );
