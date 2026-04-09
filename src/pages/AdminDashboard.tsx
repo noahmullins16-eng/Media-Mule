@@ -24,6 +24,7 @@ interface AdminAnalytics {
   tier_distribution: { tier: string; count: number }[] | null;
   recent_users: {
     user_id: string;
+    email: string;
     tier: string;
     storage_used: number;
     created_at: string;
