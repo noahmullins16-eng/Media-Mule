@@ -275,13 +275,13 @@ export const VideoUploader = () => {
         <div className="text-center">
           <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-lg font-medium mb-2">
-            Drag and drop your videos & images here
+            Drag and drop your videos, images & audio here
           </p>
           <p className="text-muted-foreground mb-4">or</p>
           <label>
             <input
               type="file"
-              accept="video/*,image/*"
+              accept="video/*,image/*,audio/*,.mp3,.wav"
               onChange={handleFileChange}
               className="hidden"
               multiple
@@ -291,7 +291,7 @@ export const VideoUploader = () => {
             </Button>
           </label>
           <p className="text-xs text-muted-foreground mt-3">
-            Videos & images · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
+            Videos, images & audio · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
             {tier !== "enterprise" && (
               <> · <Link to="/pricing" className="text-accent hover:underline">Upgrade for more</Link></>
             )}
