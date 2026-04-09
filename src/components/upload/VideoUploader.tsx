@@ -208,10 +208,20 @@ export const VideoUploader = () => {
         toast.error(`Please enter a title for "${missingTitle.file.name}"`);
         return;
       }
+      // Validate per-file prices
+      for (const f of files) {
+        if (f.pricingEnabled) {
+          const p = f.price ? parseFloat(f.price) : 0;
+          if (!f.price || isNaN(p) || p < 0.99) {
+            toast.error(`Price for "${f.title}" must be at least $0.99 or disable pricing`);
+            return;
+          }
+        }
+      }
     }
 
     const priceNum = price ? parseFloat(price) : 0;
-    if (price && (isNaN(priceNum) || priceNum < 0.99)) {
+    if (uploadMode === "bundle" && price && (isNaN(priceNum) || priceNum < 0.99)) {
       toast.error("Price must be at least $0.99 or left empty for storage only");
       return;
     }
@@ -221,10 +231,10 @@ export const VideoUploader = () => {
 
     try {
       if (uploadMode === "individual") {
-        // Each file becomes its own listing
         for (let i = 0; i < files.length; i++) {
           const uploadFile = files[i];
-          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, priceNum);
+          const filePrice = uploadFile.pricingEnabled ? parseFloat(uploadFile.price) || 0 : 0;
+          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, filePrice, uploadFile.watermarksEnabled, uploadFile.folderId);
           setUploadProgress(Math.round(((i + 1) / files.length) * 100));
         }
         setUploadedCount(files.length);
