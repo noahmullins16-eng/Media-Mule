@@ -209,8 +209,7 @@ export const VideoUploader = () => {
         console.warn("Thumbnail upload failed:", error.message);
         return null;
       }
-      const { data: urlData } = supabase.storage.from("videos").getPublicUrl(thumbPath);
-      return urlData?.publicUrl || null;
+      return thumbPath;
     } catch (e) {
       console.warn("Thumbnail generation failed:", e);
       return null;

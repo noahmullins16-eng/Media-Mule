@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Video, Trash2, ExternalLink, Link2, ShieldCheck, FolderInput, Download } from "lucide-react";
 import { downloadMedia } from "@/lib/download-media";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMediaThumbnail } from "@/lib/media-thumbnails";
 import { toast } from "sonner";
 import type { MediaFolder } from "@/components/folders/FolderSidebar";
 
@@ -18,6 +19,7 @@ export interface VideoItem {
   file_size: number | null;
   status: string;
   created_at: string;
+  thumbnail_url: string | null;
   watermarks_enabled: boolean;
   folder_id: string | null;
 }
@@ -35,28 +37,23 @@ export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRo
 
   useEffect(() => {
     let cancelled = false;
+
     const load = async () => {
-      const { data } = await supabase.storage.from("videos").createSignedUrl(video.file_path, 3600);
-      if (!data?.signedUrl || cancelled) return;
-      const vid = document.createElement("video");
-      vid.crossOrigin = "anonymous";
-      vid.muted = true;
-      vid.preload = "metadata";
-      vid.src = data.signedUrl;
-      vid.addEventListener("loadeddata", () => { vid.currentTime = 1; });
-      vid.addEventListener("seeked", () => {
-        const c = document.createElement("canvas");
-        c.width = 160; c.height = 90;
-        const ctx = c.getContext("2d");
-        if (ctx && !cancelled) {
-          ctx.drawImage(vid, 0, 0, c.width, c.height);
-          setThumbnail(c.toDataURL("image/jpeg", 0.7));
-        }
+      setThumbnail(null);
+
+      const resolvedThumbnail = await resolveMediaThumbnail({
+        thumbnailValue: video.thumbnail_url,
+        filePath: video.file_path,
       });
+
+      if (!cancelled) {
+        setThumbnail(resolvedThumbnail);
+      }
     };
+
     load();
     return () => { cancelled = true; };
-  }, [video.file_path]);
+  }, [video.file_path, video.thumbnail_url]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`https://mediamuleco.com/video/${video.id}`);
