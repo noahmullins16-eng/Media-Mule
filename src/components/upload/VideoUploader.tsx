@@ -109,7 +109,7 @@ export const VideoUploader = () => {
     }
   }, [tierConfig]);
 
-  const updateFileDetail = (id: string, field: "title" | "description", value: string) => {
+  const updateFileDetail = (id: string, field: keyof UploadFile, value: any) => {
     setFiles((prev) => prev.map((f) => f.id === id ? { ...f, [field]: value } : f));
   };
 
