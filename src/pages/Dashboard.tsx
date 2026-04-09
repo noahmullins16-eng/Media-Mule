@@ -158,7 +158,11 @@ const Dashboard = () => {
 
   const filteredVideos = activeFolderId === null
     ? videos
-    : videos.filter((v) => v.folder_id === activeFolderId);
+    : (() => {
+        const tree = buildTree(folders);
+        const folderIds = new Set([activeFolderId, ...getDescendantIds(activeFolderId, tree)]);
+        return videos.filter((v) => v.folder_id && folderIds.has(v.folder_id));
+      })();
 
   const handleVideoUpdate = (updated: VideoItem) => {
     setVideos((prev) => prev.map((v) => v.id === updated.id ? updated : v));
