@@ -27,6 +27,7 @@ interface UploadFile {
   pricingEnabled: boolean;
   watermarksEnabled: boolean;
   folderId: string | null;
+  previewImage: File | null;
 }
 
 type UploadMode = "bundle" | "individual";
@@ -50,6 +51,7 @@ export const VideoUploader = () => {
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
+  const [bundlePreviewImage, setBundlePreviewImage] = useState<File | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -103,6 +105,7 @@ export const VideoUploader = () => {
           pricingEnabled: true,
           watermarksEnabled: true,
           folderId: null,
+          previewImage: null,
         });
       }
     }
@@ -197,9 +200,12 @@ export const VideoUploader = () => {
     });
   };
 
-  const uploadThumbnail = async (file: File, fileType: "video" | "image" | "audio", userId: string): Promise<string | null> => {
+  const uploadThumbnail = async (file: File, fileType: "video" | "image" | "audio", userId: string, previewImage?: File | null): Promise<string | null> => {
     try {
-      const blob = await generateThumbnail(file, fileType);
+      // For audio files, use the preview image if provided
+      const thumbSource = fileType === "audio" && previewImage ? previewImage : file;
+      const thumbType = fileType === "audio" && previewImage ? "image" as const : fileType;
+      const blob = await generateThumbnail(thumbSource, thumbType);
       if (!blob) return null;
       const thumbPath = `${userId}/thumbs/${crypto.randomUUID()}.jpg`;
       const { error } = await supabase.storage
@@ -226,7 +232,7 @@ export const VideoUploader = () => {
       .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
     if (uploadError) throw uploadError;
 
-    const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id);
+    const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id, uploadFile.previewImage);
 
     const { data: videoRecord, error: dbError } = await supabase
       .from("videos")
@@ -328,9 +334,12 @@ export const VideoUploader = () => {
 
         setUploadProgress(30);
 
-        // Generate thumbnail from the primary file (prefer image/video)
+        // Generate thumbnail: prefer bundle preview image, then image file, then video, then audio preview
         const thumbFile = files.find((f) => f.type === "image") || files.find((f) => f.type === "video") || primaryFile;
-        const thumbnailUrl = await uploadThumbnail(thumbFile.file, thumbFile.type, user.id);
+        const previewImg = bundlePreviewImage || files.find((f) => f.type === "audio" && f.previewImage)?.previewImage;
+        const thumbnailUrl = previewImg
+          ? await uploadThumbnail(previewImg, "image", user.id)
+          : await uploadThumbnail(thumbFile.file, thumbFile.type, user.id);
 
         const { data: videoRecord, error: dbError } = await supabase
           .from("videos")
@@ -419,6 +428,7 @@ export const VideoUploader = () => {
             setUploadProgress(0);
             setFolderId(null);
             setUploadedCount(0);
+            setBundlePreviewImage(null);
           }}>
             Upload Another
           </Button>
@@ -617,6 +627,56 @@ export const VideoUploader = () => {
                       </SelectContent>
                     </Select>
                   )}
+
+                  {/* Preview image for audio files */}
+                  {uploadFile.type === "audio" && (
+                    <div className="rounded-lg border border-border p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Image className="w-4 h-4 text-accent" />
+                        <Label className="text-xs font-medium">Preview Image (optional)</Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Add cover art or imagery for your audio</p>
+                      {uploadFile.previewImage ? (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={URL.createObjectURL(uploadFile.previewImage)}
+                            alt="Preview"
+                            className="w-16 h-16 rounded-lg object-cover"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs truncate">{uploadFile.previewImage.name}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateFileDetail(uploadFile.id, "previewImage", null)}
+                            disabled={isUploading}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const img = e.target.files?.[0];
+                              if (img) updateFileDetail(uploadFile.id, "previewImage", img);
+                              e.target.value = "";
+                            }}
+                            disabled={isUploading}
+                          />
+                          <Button type="button" variant="outline" size="sm" asChild>
+                            <span className="text-xs">Choose Image</span>
+                          </Button>
+                        </label>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -632,6 +692,61 @@ export const VideoUploader = () => {
             <span className="text-muted-foreground">{uploadProgress}%</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
+        </div>
+      )}
+
+      {/* Preview image for bundle with audio files */}
+      {uploadMode === "bundle" && files.some((f) => f.type === "audio") && (
+        <div className="rounded-lg border border-border p-4 mb-4 space-y-2">
+          <div className="flex items-center gap-3">
+            <Image className="w-5 h-5 text-accent" />
+            <div>
+              <Label className="text-sm font-medium">Preview Image (optional)</Label>
+              <p className="text-xs text-muted-foreground">Add cover art or imagery for your audio content</p>
+            </div>
+          </div>
+          {bundlePreviewImage ? (
+            <div className="flex items-center gap-3 mt-2">
+              <img
+                src={URL.createObjectURL(bundlePreviewImage)}
+                alt="Preview"
+                className="w-20 h-20 rounded-lg object-cover"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm truncate">{bundlePreviewImage.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(bundlePreviewImage.size / (1024 * 1024)).toFixed(2)} MB
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setBundlePreviewImage(null)}
+                disabled={isUploading}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <label className="mt-2 inline-block">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const img = e.target.files?.[0];
+                  if (img) setBundlePreviewImage(img);
+                  e.target.value = "";
+                }}
+                disabled={isUploading}
+              />
+              <Button type="button" variant="outline" size="sm" asChild>
+                <span>Choose Image</span>
+              </Button>
+            </label>
+          )}
         </div>
       )}
 
