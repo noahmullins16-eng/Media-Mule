@@ -77,7 +77,7 @@ export const WatermarkUploader = ({ onWatermarkUrl }: WatermarkUploaderProps) =>
         .from("watermarks")
         .getPublicUrl(filePath);
 
-      const url = urlData?.publicUrl || null;
+      const url = urlData?.publicUrl ? `${urlData.publicUrl}?t=${Date.now()}` : null;
       setWatermarkUrl(url);
       onWatermarkUrl(url);
       toast.success("Custom watermark saved to your profile!");
