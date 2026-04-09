@@ -586,7 +586,7 @@ export const VideoUploader = () => {
           </>
         )}
 
-        {folders.length > 0 && (
+        {uploadMode !== "individual" && folders.length > 0 && (
           <div>
             <label className="block text-sm font-medium mb-2">Folder (optional)</label>
             <Select value={folderId || "none"} onValueChange={(v) => setFolderId(v === "none" ? null : v)}>
@@ -605,64 +605,67 @@ export const VideoUploader = () => {
             </Select>
           </div>
         )}
-        <div className="flex items-center justify-between rounded-lg border border-border p-4">
-          <div className="flex items-center gap-3">
-            <DollarSign className="w-5 h-5 text-accent" />
-            <div>
-              <Label htmlFor="pricing-toggle" className="text-sm font-medium">Set a Price</Label>
-              <p className="text-xs text-muted-foreground">
-                {uploadMode === "individual" ? "Applied to all listings" : "Disable to use as storage only (not for sale)"}
-              </p>
-            </div>
-          </div>
-          <Switch
-            id="pricing-toggle"
-            checked={pricingEnabled}
-            onCheckedChange={(checked) => {
-              setPricingEnabled(checked);
-              if (!checked) setPrice("");
-            }}
-            disabled={isUploading}
-          />
-        </div>
 
-        {pricingEnabled && (
-          <div>
-            <label className="block text-sm font-medium mb-2">Price (USD)</label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="number"
-                min="0.99"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="9.99"
-                className="bg-background/50 pl-10"
+        {uploadMode !== "individual" && (
+          <>
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div className="flex items-center gap-3">
+                <DollarSign className="w-5 h-5 text-accent" />
+                <div>
+                  <Label htmlFor="pricing-toggle" className="text-sm font-medium">Set a Price</Label>
+                  <p className="text-xs text-muted-foreground">Disable to use as storage only (not for sale)</p>
+                </div>
+              </div>
+              <Switch
+                id="pricing-toggle"
+                checked={pricingEnabled}
+                onCheckedChange={(checked) => {
+                  setPricingEnabled(checked);
+                  if (!checked) setPrice("");
+                }}
                 disabled={isUploading}
               />
             </div>
-          </div>
-        )}
 
-        <div className="flex items-center justify-between rounded-lg border border-border p-4">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-accent" />
-            <div>
-              <Label htmlFor="watermarks" className="text-sm font-medium">Watermark Protection</Label>
-              <p className="text-xs text-muted-foreground">Overlay watermarks on video previews to deter piracy</p>
+            {pricingEnabled && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Price (USD)</label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    min="0.99"
+                    step="0.01"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="9.99"
+                    className="bg-background/50 pl-10"
+                    disabled={isUploading}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-accent" />
+                <div>
+                  <Label htmlFor="watermarks" className="text-sm font-medium">Watermark Protection</Label>
+                  <p className="text-xs text-muted-foreground">Overlay watermarks on video previews to deter piracy</p>
+                </div>
+              </div>
+              <Switch
+                id="watermarks"
+                checked={watermarksEnabled}
+                onCheckedChange={setWatermarksEnabled}
+                disabled={isUploading}
+              />
             </div>
-          </div>
-          <Switch
-            id="watermarks"
-            checked={watermarksEnabled}
-            onCheckedChange={setWatermarksEnabled}
-            disabled={isUploading}
-          />
-        </div>
 
-        {watermarksEnabled && (
-          <WatermarkUploader onWatermarkUrl={setCustomWatermarkUrl} />
+            {watermarksEnabled && (
+              <WatermarkUploader onWatermarkUrl={setCustomWatermarkUrl} />
+            )}
+          </>
         )}
       </div>
 
