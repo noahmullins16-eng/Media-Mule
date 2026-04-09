@@ -322,7 +322,7 @@ const AdminDashboard = () => {
                     const config = TIER_CONFIG[u.tier as keyof typeof TIER_CONFIG];
                     return (
                       <tr key={u.user_id} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3 font-mono text-xs">{u.user_id.slice(0, 8)}...</td>
+                        <td className="py-3 text-sm">{u.email}</td>
                         <td className="py-3">
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent capitalize">
                             {config?.label || u.tier}
