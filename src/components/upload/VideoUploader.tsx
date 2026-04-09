@@ -97,6 +97,10 @@ export const VideoUploader = () => {
           type: getFileType(f),
           title: nameWithoutExt,
           description: "",
+          price: "",
+          pricingEnabled: true,
+          watermarksEnabled: true,
+          folderId: null,
         });
       }
     }
