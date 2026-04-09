@@ -70,7 +70,7 @@ export const VideoUploader = () => {
 
   const getFileType = (file: File): "video" | "image" | "audio" => {
     if (file.type.startsWith("video/")) return "video";
-    if (file.type.startsWith("audio/") || ["mp3", "wav"].includes(file.name.split(".").pop()?.toLowerCase() || "")) return "audio";
+    if (file.type.startsWith("audio/") || ["mp3", "wav", "m4a"].includes(file.name.split(".").pop()?.toLowerCase() || "")) return "audio";
     return "image";
   };
 
