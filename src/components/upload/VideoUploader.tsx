@@ -231,7 +231,7 @@ export const VideoUploader = () => {
       .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
     if (uploadError) throw uploadError;
 
-    const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id);
+    const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id, uploadFile.previewImage);
 
     const { data: videoRecord, error: dbError } = await supabase
       .from("videos")
