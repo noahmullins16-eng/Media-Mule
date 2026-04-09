@@ -104,6 +104,7 @@ export const VideoUploader = () => {
           pricingEnabled: true,
           watermarksEnabled: true,
           folderId: null,
+          previewImage: null,
         });
       }
     }
