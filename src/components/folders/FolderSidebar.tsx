@@ -61,6 +61,7 @@ export const FolderSidebar = ({
   const [editName, setEditName] = useState("");
   const [dragOverId, setDragOverId] = useState<string | "all" | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
 
   const tree = buildTree(folders);
 
@@ -76,6 +77,12 @@ export const FolderSidebar = ({
   const handleDragOver = (e: React.DragEvent, id: string | "all") => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    // Don't allow dropping a folder onto itself or its descendants
+    if (draggingFolderId && id !== "all") {
+      if (id === draggingFolderId) return;
+      const descendants = getDescendantIds(draggingFolderId, tree);
+      if (descendants.includes(id as string)) return;
+    }
     setDragOverId(id);
   };
 
@@ -86,9 +93,42 @@ export const FolderSidebar = ({
   const handleDrop = (e: React.DragEvent, folderId: string | null) => {
     e.preventDefault();
     setDragOverId(null);
+
+    // Handle folder drop
+    const droppedFolderId = e.dataTransfer.getData("text/folder-id");
+    if (droppedFolderId) {
+      // Prevent dropping onto self or descendants
+      if (folderId === droppedFolderId) return;
+      if (folderId) {
+        const descendants = getDescendantIds(droppedFolderId, tree);
+        if (descendants.includes(folderId)) return;
+      }
+      // Find the folder to check current parent
+      const folder = folders.find(f => f.id === droppedFolderId);
+      if (folder && folder.parent_folder_id !== folderId) {
+        handleMoveFolder(droppedFolderId, folderId);
+      }
+      return;
+    }
+
+    // Handle video drop
     const videoId = e.dataTransfer.getData("text/video-id");
     if (videoId && onDropVideo) {
       onDropVideo(videoId, folderId);
+    }
+  };
+
+  const handleMoveFolder = async (folderId: string, newParentId: string | null) => {
+    const { error } = await supabase
+      .from("media_folders")
+      .update({ parent_folder_id: newParentId } as any)
+      .eq("id", folderId);
+    if (error) {
+      toast.error("Failed to move folder");
+    } else {
+      toast.success("Folder moved");
+      if (newParentId) setExpanded((prev) => new Set(prev).add(newParentId));
+      onFoldersChange();
     }
   };
 
@@ -186,16 +226,24 @@ export const FolderSidebar = ({
         ) : (
           <div className="group relative">
             <button
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/folder-id", folder.id);
+                setDraggingFolderId(folder.id);
+              }}
+              onDragEnd={() => setDraggingFolderId(null)}
               onClick={() => onSelectFolder(folder.id)}
               onDragOver={(e) => handleDragOver(e, folder.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, folder.id)}
               className={`w-full flex items-center gap-1.5 py-2 rounded-lg text-sm transition-colors ${
-                dragOverId === folder.id
-                  ? "bg-accent/25 ring-2 ring-accent/50"
-                  : activeFolderId === folder.id
-                    ? "bg-accent/15 text-accent font-medium"
-                    : "text-muted-foreground hover:bg-muted"
+                draggingFolderId === folder.id
+                  ? "opacity-50"
+                  : dragOverId === folder.id
+                    ? "bg-accent/25 ring-2 ring-accent/50"
+                    : activeFolderId === folder.id
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-muted-foreground hover:bg-muted"
               }`}
               style={{ paddingLeft, paddingRight: 12 }}
             >
