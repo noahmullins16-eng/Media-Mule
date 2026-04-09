@@ -85,7 +85,7 @@ const Video = () => {
       let customWatermarkUrl: string | null = null;
       let creatorUsername = "Media Mule Creator";
       const { data: profileData } = await supabase
-        .from("creator_profiles")
+        .from("creator_profiles_public" as any)
         .select("custom_watermark_path, username")
         .eq("user_id", data.user_id)
         .maybeSingle();
