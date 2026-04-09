@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical, FolderOpen, Music } from "lucide-react";
+import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical, FolderOpen, Music, Layers, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -18,13 +18,18 @@ interface UploadFile {
   id: string;
   file: File;
   type: "video" | "image" | "audio";
+  title: string;
+  description: string;
 }
+
+type UploadMode = "bundle" | "individual";
 
 export const VideoUploader = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<UploadFile[]>([]);
+  const [uploadMode, setUploadMode] = useState<UploadMode>("bundle");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -33,6 +38,7 @@ export const VideoUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [uploadedCount, setUploadedCount] = useState(0);
   const [tier, setTier] = useState<SubscriptionTier>("basic");
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null>(null);
@@ -79,10 +85,13 @@ export const VideoUploader = () => {
     const validFiles: UploadFile[] = [];
     for (const f of Array.from(newFiles)) {
       if (validateFile(f)) {
+        const nameWithoutExt = f.name.replace(/\.[^/.]+$/, "");
         validFiles.push({
           id: crypto.randomUUID(),
           file: f,
           type: getFileType(f),
+          title: nameWithoutExt,
+          description: "",
         });
       }
     }
@@ -90,6 +99,10 @@ export const VideoUploader = () => {
       setFiles((prev) => [...prev, ...validFiles]);
     }
   }, [tierConfig]);
+
+  const updateFileDetail = (id: string, field: "title" | "description", value: string) => {
+    setFiles((prev) => prev.map((f) => f.id === id ? { ...f, [field]: value } : f));
+  };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -121,6 +134,46 @@ export const VideoUploader = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
+  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number) => {
+    if (!user) throw new Error("Not authenticated");
+    const ext = uploadFile.file.name.split(".").pop();
+    const filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("videos")
+      .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
+    if (uploadError) throw uploadError;
+
+    const { data: videoRecord, error: dbError } = await supabase
+      .from("videos")
+      .insert({
+        user_id: user.id,
+        title: fileTitle,
+        description: fileDescription || null,
+        price: priceNum,
+        file_path: filePath,
+        file_size: uploadFile.file.size,
+        status: "published",
+        watermarks_enabled: watermarksEnabled,
+        folder_id: folderId || null,
+      })
+      .select("id")
+      .single();
+
+    if (dbError || !videoRecord) throw dbError || new Error("Failed to create record");
+
+    const { error: fileError } = await supabase
+      .from("video_files")
+      .insert({
+        video_id: videoRecord.id,
+        file_path: filePath,
+        file_type: uploadFile.type,
+        file_size: uploadFile.file.size,
+        sort_order: 0,
+      });
+    if (fileError) throw fileError;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -130,9 +183,22 @@ export const VideoUploader = () => {
       return;
     }
 
-    if (files.length === 0 || !title) {
-      toast.error("Please add at least one file and a title");
+    if (files.length === 0) {
+      toast.error("Please add at least one file");
       return;
+    }
+
+    if (uploadMode === "bundle" && !title) {
+      toast.error("Please enter a title");
+      return;
+    }
+
+    if (uploadMode === "individual") {
+      const missingTitle = files.find((f) => !f.title.trim());
+      if (missingTitle) {
+        toast.error(`Please enter a title for "${missingTitle.file.name}"`);
+        return;
+      }
     }
 
     const priceNum = price ? parseFloat(price) : 0;
@@ -145,72 +211,78 @@ export const VideoUploader = () => {
     setUploadProgress(5);
 
     try {
-      // Use the first video file as the main file_path, or first image if no videos
-      const primaryFile = files.find((f) => f.type === "video") || files[0];
-      const primaryExt = primaryFile.file.name.split(".").pop();
-      const primaryPath = `${user.id}/${crypto.randomUUID()}.${primaryExt}`;
-
-      // Upload primary file first
-      setUploadProgress(10);
-      const { error: primaryUploadError } = await supabase.storage
-        .from("videos")
-        .upload(primaryPath, primaryFile.file, { cacheControl: "3600", upsert: false });
-      if (primaryUploadError) throw primaryUploadError;
-
-      setUploadProgress(30);
-
-      // Create video record
-      const { data: videoRecord, error: dbError } = await supabase
-        .from("videos")
-        .insert({
-          user_id: user.id,
-          title,
-          description: description || null,
-          price: priceNum,
-          file_path: primaryPath,
-          file_size: primaryFile.file.size,
-          status: "published",
-          watermarks_enabled: watermarksEnabled,
-          folder_id: folderId || null,
-        })
-        .select("id")
-        .single();
-
-      if (dbError || !videoRecord) throw dbError || new Error("Failed to create video record");
-
-      setUploadProgress(45);
-
-      // Upload all files and create video_files records
-      const totalFiles = files.length;
-      for (let i = 0; i < files.length; i++) {
-        const uploadFile = files[i];
-        let filePath: string;
-
-        if (uploadFile.id === primaryFile.id) {
-          // Primary file already uploaded
-          filePath = primaryPath;
-        } else {
-          const ext = uploadFile.file.name.split(".").pop();
-          filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
-          const { error: uploadError } = await supabase.storage
-            .from("videos")
-            .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
-          if (uploadError) throw uploadError;
+      if (uploadMode === "individual") {
+        // Each file becomes its own listing
+        for (let i = 0; i < files.length; i++) {
+          const uploadFile = files[i];
+          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, priceNum);
+          setUploadProgress(Math.round(((i + 1) / files.length) * 100));
         }
+        setUploadedCount(files.length);
+      } else {
+        // Bundle mode — original behavior
+        const primaryFile = files.find((f) => f.type === "video") || files[0];
+        const primaryExt = primaryFile.file.name.split(".").pop();
+        const primaryPath = `${user.id}/${crypto.randomUUID()}.${primaryExt}`;
 
-        // Insert into video_files
-        const { error: fileError } = await supabase
-          .from("video_files")
+        setUploadProgress(10);
+        const { error: primaryUploadError } = await supabase.storage
+          .from("videos")
+          .upload(primaryPath, primaryFile.file, { cacheControl: "3600", upsert: false });
+        if (primaryUploadError) throw primaryUploadError;
+
+        setUploadProgress(30);
+
+        const { data: videoRecord, error: dbError } = await supabase
+          .from("videos")
           .insert({
-            video_id: videoRecord.id,
-            file_path: filePath,
-            file_type: uploadFile.type,
-            file_size: uploadFile.file.size,
-            sort_order: i,
-          });
-        if (fileError) throw fileError;
+            user_id: user.id,
+            title,
+            description: description || null,
+            price: priceNum,
+            file_path: primaryPath,
+            file_size: primaryFile.file.size,
+            status: "published",
+            watermarks_enabled: watermarksEnabled,
+            folder_id: folderId || null,
+          })
+          .select("id")
+          .single();
 
-        setUploadProgress(45 + Math.round(((i + 1) / totalFiles) * 50));
+        if (dbError || !videoRecord) throw dbError || new Error("Failed to create video record");
+
+        setUploadProgress(45);
+
+        const totalFiles = files.length;
+        for (let i = 0; i < files.length; i++) {
+          const uploadFile = files[i];
+          let filePath: string;
+
+          if (uploadFile.id === primaryFile.id) {
+            filePath = primaryPath;
+          } else {
+            const ext = uploadFile.file.name.split(".").pop();
+            filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadError } = await supabase.storage
+              .from("videos")
+              .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
+            if (uploadError) throw uploadError;
+          }
+
+          const { error: fileError } = await supabase
+            .from("video_files")
+            .insert({
+              video_id: videoRecord.id,
+              file_path: filePath,
+              file_type: uploadFile.type,
+              file_size: uploadFile.file.size,
+              sort_order: i,
+            });
+          if (fileError) throw fileError;
+
+          setUploadProgress(45 + Math.round(((i + 1) / totalFiles) * 50));
+        }
+        setUploadedCount(1);
       }
 
       setUploadProgress(100);
@@ -225,6 +297,7 @@ export const VideoUploader = () => {
   };
 
   if (uploadComplete) {
+    const listingCount = uploadMode === "individual" ? uploadedCount : 1;
     return (
       <div className="glass-card p-8 max-w-2xl mx-auto text-center">
         <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-6">
@@ -232,7 +305,9 @@ export const VideoUploader = () => {
         </div>
         <h2 className="font-display text-2xl font-bold mb-3">Content Uploaded Successfully!</h2>
         <p className="text-muted-foreground mb-6">
-          Your bundle "{title}" with {files.length} file{files.length !== 1 ? "s" : ""} is now live at ${price}.
+          {listingCount === 1
+            ? `Your ${uploadMode === "bundle" && files.length > 1 ? `bundle "${title}" with ${files.length} files` : `listing "${uploadMode === "bundle" ? title : files[0]?.title}"`} is now live.`
+            : `${listingCount} individual listings have been created and are now live.`}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button variant="hero" onClick={() => {
@@ -243,6 +318,7 @@ export const VideoUploader = () => {
             setUploadComplete(false);
             setUploadProgress(0);
             setFolderId(null);
+            setUploadedCount(0);
           }}>
             Upload Another
           </Button>
@@ -299,43 +375,96 @@ export const VideoUploader = () => {
         </div>
       </div>
 
+      {/* Upload Mode Toggle */}
+      {files.length > 1 && (
+        <div className="flex items-center gap-3 rounded-lg border border-border p-4 mb-4">
+          <div className="flex items-center gap-3 flex-1">
+            {uploadMode === "bundle" ? (
+              <Layers className="w-5 h-5 text-accent" />
+            ) : (
+              <FileText className="w-5 h-5 text-accent" />
+            )}
+            <div>
+              <Label className="text-sm font-medium">Upload Mode</Label>
+              <p className="text-xs text-muted-foreground">
+                {uploadMode === "bundle"
+                  ? "All files grouped as one listing"
+                  : "Each file becomes its own listing"}
+              </p>
+            </div>
+          </div>
+          <Select value={uploadMode} onValueChange={(v) => setUploadMode(v as UploadMode)}>
+            <SelectTrigger className="w-[160px] bg-background/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="bundle">Bundle</SelectItem>
+              <SelectItem value="individual">Individual</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* File List */}
       {files.length > 0 && (
         <div className="mb-6 space-y-2">
           <p className="text-sm font-medium text-muted-foreground mb-2">
             {files.length} file{files.length !== 1 ? "s" : ""} selected
           </p>
-          {files.map((uploadFile, index) => (
+          {files.map((uploadFile) => (
             <div
               key={uploadFile.id}
-              className="flex items-center gap-3 rounded-lg border border-border p-3 bg-background/50"
+              className="rounded-lg border border-border p-3 bg-background/50"
             >
-              <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
-              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                {uploadFile.type === "video" ? (
-                  <Video className="w-5 h-5 text-accent" />
-                ) : uploadFile.type === "audio" ? (
-                  <Music className="w-5 h-5 text-accent" />
-                ) : (
-                  <Image className="w-5 h-5 text-accent" />
-                )}
+              <div className="flex items-center gap-3">
+                <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  {uploadFile.type === "video" ? (
+                    <Video className="w-5 h-5 text-accent" />
+                  ) : uploadFile.type === "audio" ? (
+                    <Music className="w-5 h-5 text-accent" />
+                  ) : (
+                    <Image className="w-5 h-5 text-accent" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{uploadFile.file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(uploadFile.file.size / (1024 * 1024)).toFixed(2)} MB · {uploadFile.type}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeFile(uploadFile.id)}
+                  className="shrink-0 h-8 w-8"
+                  disabled={isUploading}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{uploadFile.file.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {(uploadFile.file.size / (1024 * 1024)).toFixed(2)} MB · {uploadFile.type}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => removeFile(uploadFile.id)}
-                className="shrink-0 h-8 w-8"
-                disabled={isUploading}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+
+              {/* Individual title/description fields */}
+              {uploadMode === "individual" && (
+                <div className="mt-3 pl-[52px] space-y-2">
+                  <Input
+                    value={uploadFile.title}
+                    onChange={(e) => updateFileDetail(uploadFile.id, "title", e.target.value)}
+                    placeholder="Title *"
+                    className="bg-background/50 h-9 text-sm"
+                    disabled={isUploading}
+                    required
+                  />
+                  <Textarea
+                    value={uploadFile.description}
+                    onChange={(e) => updateFileDetail(uploadFile.id, "description", e.target.value)}
+                    placeholder="Description (optional)"
+                    className="bg-background/50 min-h-[60px] text-sm"
+                    disabled={isUploading}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -354,28 +483,35 @@ export const VideoUploader = () => {
 
       {/* Details */}
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Bundle Title *</label>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter a title for your content bundle"
-            className="bg-background/50"
-            disabled={isUploading}
-            required
-          />
-        </div>
+        {/* Shared title/description for bundle mode */}
+        {uploadMode === "bundle" && (
+          <>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {files.length > 1 ? "Bundle Title *" : "Title *"}
+              </label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={files.length > 1 ? "Enter a title for your content bundle" : "Enter a title for your content"}
+                className="bg-background/50"
+                disabled={isUploading}
+                required
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Description</label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Tell buyers what they'll get..."
-            className="bg-background/50 min-h-[100px]"
-            disabled={isUploading}
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Description</label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Tell buyers what they'll get..."
+                className="bg-background/50 min-h-[100px]"
+                disabled={isUploading}
+              />
+            </div>
+          </>
+        )}
 
         {folders.length > 0 && (
           <div>
@@ -401,7 +537,9 @@ export const VideoUploader = () => {
             <DollarSign className="w-5 h-5 text-accent" />
             <div>
               <Label htmlFor="pricing-toggle" className="text-sm font-medium">Set a Price</Label>
-              <p className="text-xs text-muted-foreground">Disable to use as storage only (not for sale)</p>
+              <p className="text-xs text-muted-foreground">
+                {uploadMode === "individual" ? "Applied to all listings" : "Disable to use as storage only (not for sale)"}
+              </p>
             </div>
           </div>
           <Switch
@@ -461,10 +599,16 @@ export const VideoUploader = () => {
         variant="premium"
         size="xl"
         className="w-full mt-8"
-        disabled={isUploading || files.length === 0 || !title}
+        disabled={isUploading || files.length === 0 || (uploadMode === "bundle" && !title)}
       >
         <Upload className="w-5 h-5" />
-        {isUploading ? "Uploading..." : `Upload ${files.length > 1 ? "Bundle" : "Content"}`}
+        {isUploading
+          ? "Uploading..."
+          : uploadMode === "individual" && files.length > 1
+          ? `Upload ${files.length} Listings`
+          : files.length > 1
+          ? "Upload Bundle"
+          : "Upload Content"}
       </Button>
 
       {!user && (
