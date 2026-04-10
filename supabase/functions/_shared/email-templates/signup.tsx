@@ -45,10 +45,7 @@ export const SignupEmail = ({
           Welcome to Media Mule! We're excited to have you join our community.
         </Text>
         <Text style={text}>
-          Media Mule is designed to make working with media simple and secure. Our
-          platform allows creators and clients to safely exchange media files and
-          payments through a built-in escrow system, giving both sides confidence
-          throughout the process.
+          Media Mule is designed to make working with media simple and secure.
         </Text>
         <Text style={text}>
           To get started, please confirm your email address by clicking the link below:

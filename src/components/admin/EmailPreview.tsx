@@ -63,7 +63,7 @@ const generatePreviewHtml = (templateId: string): string => {
       ${logo}
       <h1>Hi there,</h1>
       <p class="text">Welcome to Media Mule! We're excited to have you join our community.</p>
-      <p class="text">Media Mule is designed to make working with media simple and secure. Our platform allows creators and clients to safely exchange media files and payments through a built-in escrow system, giving both sides confidence throughout the process.</p>
+      <p class="text">Media Mule is designed to make working with media simple and secure.</p>
       <p class="text">To get started, please confirm your email address by clicking the link below:</p>
       <a href="#" class="button">Confirm Your Account</a>
       <p class="text" style="margin-top:16px">Once your account is confirmed, you'll be able to log in, set up your profile, and start exchanging media securely.</p>
