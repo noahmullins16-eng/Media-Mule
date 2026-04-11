@@ -36,7 +36,7 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
           ) : (
             <>
               {/* Desktop navigation */}
-              <nav className="hidden md:flex items-center gap-8">
+              <nav className="hidden lg:flex items-center gap-8">
                 <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
                   Pricing
                 </Link>
@@ -51,7 +51,7 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
               </nav>
 
               {/* Desktop CTA */}
-              <div className="hidden md:flex items-center gap-3">
+              <div className="hidden lg:flex items-center gap-3">
                 {user ? (
                   <>
                     <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors" title="Account Settings">
@@ -78,7 +78,7 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
 
               {/* Mobile hamburger */}
               <button
-                className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="lg:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setMobileOpen(!mobileOpen)}
                 aria-label="Toggle menu"
               >
@@ -90,7 +90,7 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
 
         {/* Mobile menu dropdown */}
         {!minimal && mobileOpen && (
-          <nav className="md:hidden flex flex-col gap-4 pb-4 pt-2 border-t border-border/30">
+          <nav className="lg:hidden flex flex-col gap-4 pb-4 pt-2 border-t border-border/30">
             <Link to="/pricing" onClick={() => setMobileOpen(false)} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Pricing
             </Link>
