@@ -33,7 +33,7 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
             </>
           ) : (
             <>
-              {/* Navigation */}
+              {/* Navigation - desktop inline */}
               <nav className="hidden md:flex items-center gap-8">
                 <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
                   Pricing
@@ -42,11 +42,9 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
                   How It Works
                 </Link>
                 {user && (
-                  <>
-                    <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-                      Dashboard
-                    </Link>
-                  </>
+                  <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Dashboard
+                  </Link>
                 )}
               </nav>
 
@@ -82,6 +80,23 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
             </>
           )}
         </div>
+
+        {/* Mobile/tablet nav row */}
+        {!minimal && (
+          <nav className="flex md:hidden items-center justify-center gap-6 pb-3">
+            <Link to="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Pricing
+            </Link>
+            <Link to="/how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              How It Works
+            </Link>
+            {user && (
+              <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Dashboard
+              </Link>
+            )}
+          </nav>
+        )}
       </div>
     </header>
   );
