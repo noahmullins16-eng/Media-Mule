@@ -245,6 +245,9 @@ const Index = () => {
             <div className="flex items-center gap-6">
               <Link to="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
               <Link to="/how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How It Works</Link>
+              {user && (
+                <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
+              )}
             </div>
           </div>
         </div>
