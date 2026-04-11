@@ -30,11 +30,11 @@ export const RecoveryEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Img
-          src="https://mediamuleco.com/favicon.png"
+          src="https://fyocavwmovqrctcxbkvs.supabase.co/storage/v1/object/public/email-assets/logo.png"
           alt="Media Mule"
-          width="48"
-          height="48"
-          style={{ marginBottom: '24px' }}
+          width="64"
+          height="64"
+          style={{ marginBottom: '24px', borderRadius: '12px' }}
         />
         <Heading style={h1}>Reset your password</Heading>
         <Text style={text}>
