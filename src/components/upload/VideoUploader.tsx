@@ -50,6 +50,7 @@ export const VideoUploader = () => {
   const [currentFileProgress, setCurrentFileProgress] = useState<UploadProgress | null>(null);
   const [currentFileName, setCurrentFileName] = useState<string>("");
   const [uploadedCount, setUploadedCount] = useState(0);
+  const [parallelProgress, setParallelProgress] = useState<Record<string, { name: string; progress: UploadProgress | null; status: "uploading" | "done" | "error" }>>({});
   const [tier, setTier] = useState<SubscriptionTier>("basic");
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null>(null);
@@ -225,24 +226,43 @@ export const VideoUploader = () => {
     }
   };
 
-  const uploadFileToStorage = async (file: File, filePath: string, fileName: string): Promise<void> => {
-    setCurrentFileName(fileName);
-    setCurrentFileProgress(null);
+  const uploadFileToStorage = async (file: File, filePath: string, fileName: string, fileId?: string): Promise<void> => {
+    if (!fileId) {
+      setCurrentFileName(fileName);
+      setCurrentFileProgress(null);
+    }
     await resumableUpload({
       bucket: "videos",
       path: filePath,
       file,
-      onProgress: (progress) => setCurrentFileProgress(progress),
-      onError: (err) => console.error(`Upload error for ${fileName}:`, err),
+      onProgress: (progress) => {
+        if (fileId) {
+          setParallelProgress((prev) => ({
+            ...prev,
+            [fileId]: { ...prev[fileId], progress },
+          }));
+        } else {
+          setCurrentFileProgress(progress);
+        }
+      },
+      onError: (err) => {
+        console.error(`Upload error for ${fileName}:`, err);
+        if (fileId) {
+          setParallelProgress((prev) => ({
+            ...prev,
+            [fileId]: { ...prev[fileId], status: "error" },
+          }));
+        }
+      },
     });
   };
 
-  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null) => {
+  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null, parallel = false) => {
     if (!user) throw new Error("Not authenticated");
     const ext = uploadFile.file.name.split(".").pop();
     const filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
-    await uploadFileToStorage(uploadFile.file, filePath, uploadFile.file.name);
+    await uploadFileToStorage(uploadFile.file, filePath, uploadFile.file.name, parallel ? uploadFile.id : undefined);
 
     const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id, uploadFile.previewImage);
 
@@ -275,6 +295,54 @@ export const VideoUploader = () => {
         sort_order: 0,
       });
     if (fileError) throw fileError;
+  };
+
+  const MAX_CONCURRENT = 3;
+
+  const runParallelUploads = async (filesToUpload: UploadFile[]) => {
+    // Initialize parallel progress tracking
+    const initialProgress: Record<string, { name: string; progress: UploadProgress | null; status: "uploading" | "done" | "error" }> = {};
+    for (const f of filesToUpload) {
+      initialProgress[f.id] = { name: f.file.name, progress: null, status: "uploading" };
+    }
+    setParallelProgress(initialProgress);
+
+    let completedCount = 0;
+    const total = filesToUpload.length;
+    const queue = [...filesToUpload];
+    const errors: string[] = [];
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const uploadFile = queue.shift()!;
+        try {
+          const filePrice = uploadFile.pricingEnabled ? parseFloat(uploadFile.price) || 0 : 0;
+          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, filePrice, uploadFile.watermarksEnabled, uploadFile.folderId, true);
+          setParallelProgress((prev) => ({
+            ...prev,
+            [uploadFile.id]: { ...prev[uploadFile.id], status: "done" },
+          }));
+          completedCount++;
+          setUploadProgress(Math.round((completedCount / total) * 100));
+        } catch (err: any) {
+          errors.push(uploadFile.title || uploadFile.file.name);
+          setParallelProgress((prev) => ({
+            ...prev,
+            [uploadFile.id]: { ...prev[uploadFile.id], status: "error" },
+          }));
+          completedCount++;
+          setUploadProgress(Math.round((completedCount / total) * 100));
+        }
+      }
+    };
+
+    const workers = Array.from({ length: Math.min(MAX_CONCURRENT, total) }, () => worker());
+    await Promise.all(workers);
+
+    if (errors.length > 0) {
+      toast.error(`Failed to upload: ${errors.join(", ")}`);
+    }
+    return total - errors.length;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -321,17 +389,13 @@ export const VideoUploader = () => {
     }
 
     setIsUploading(true);
-    setUploadProgress(5);
+    setUploadProgress(0);
+    setParallelProgress({});
 
     try {
       if (uploadMode === "individual") {
-        for (let i = 0; i < files.length; i++) {
-          const uploadFile = files[i];
-          const filePrice = uploadFile.pricingEnabled ? parseFloat(uploadFile.price) || 0 : 0;
-          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, filePrice, uploadFile.watermarksEnabled, uploadFile.folderId);
-          setUploadProgress(Math.round(((i + 1) / files.length) * 100));
-        }
-        setUploadedCount(files.length);
+        const successCount = await runParallelUploads(files);
+        setUploadedCount(successCount);
       } else {
         // Bundle mode — original behavior
         const primaryFile = files.find((f) => f.type === "video") || files[0];
@@ -437,6 +501,7 @@ export const VideoUploader = () => {
             setBundlePreviewImage(null);
             setCurrentFileProgress(null);
             setCurrentFileName("");
+            setParallelProgress({});
           }}>
             Upload Another
           </Button>
@@ -700,7 +765,41 @@ export const VideoUploader = () => {
             <span className="text-muted-foreground">{uploadProgress}%</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
-          {currentFileProgress && currentFileName && (
+
+          {/* Parallel per-file progress (individual mode) */}
+          {Object.keys(parallelProgress).length > 0 && (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {Object.entries(parallelProgress).map(([id, entry]) => (
+                <div key={id} className="rounded-lg border border-border bg-background/50 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium truncate flex-1">{entry.name}</p>
+                    <span className={cn("text-xs font-medium shrink-0", {
+                      "text-accent": entry.status === "uploading",
+                      "text-green-500": entry.status === "done",
+                      "text-destructive": entry.status === "error",
+                    })}>
+                      {entry.status === "done" ? "✓ Done" : entry.status === "error" ? "✗ Failed" : `${entry.progress?.percentage ?? 0}%`}
+                    </span>
+                  </div>
+                  {entry.status === "uploading" && entry.progress && (
+                    <>
+                      <Progress value={entry.progress.percentage} className="h-1.5" />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{formatBytes(entry.progress.bytesUploaded)} / {formatBytes(entry.progress.bytesTotal)}</span>
+                        <span>
+                          {entry.progress.speed > 0 && `${formatBytes(entry.progress.speed)}/s · `}
+                          {formatEta(entry.progress.eta)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Single file progress (bundle mode) */}
+          {Object.keys(parallelProgress).length === 0 && currentFileProgress && currentFileName && (
             <div className="rounded-lg border border-border bg-background/50 p-3 space-y-2">
               <p className="text-xs font-medium truncate">{currentFileName}</p>
               <Progress value={currentFileProgress.percentage} className="h-1.5" />
