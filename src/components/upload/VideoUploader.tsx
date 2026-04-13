@@ -50,6 +50,7 @@ export const VideoUploader = () => {
   const [currentFileProgress, setCurrentFileProgress] = useState<UploadProgress | null>(null);
   const [currentFileName, setCurrentFileName] = useState<string>("");
   const [uploadedCount, setUploadedCount] = useState(0);
+  const [parallelProgress, setParallelProgress] = useState<Record<string, { name: string; progress: UploadProgress | null; status: "uploading" | "done" | "error" }>>({});
   const [tier, setTier] = useState<SubscriptionTier>("basic");
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null>(null);
