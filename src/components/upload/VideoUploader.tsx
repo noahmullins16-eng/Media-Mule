@@ -257,12 +257,12 @@ export const VideoUploader = () => {
     });
   };
 
-  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null) => {
+  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null, parallel = false) => {
     if (!user) throw new Error("Not authenticated");
     const ext = uploadFile.file.name.split(".").pop();
     const filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
-    await uploadFileToStorage(uploadFile.file, filePath, uploadFile.file.name);
+    await uploadFileToStorage(uploadFile.file, filePath, uploadFile.file.name, parallel ? uploadFile.id : undefined);
 
     const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id, uploadFile.previewImage);
 
@@ -295,6 +295,54 @@ export const VideoUploader = () => {
         sort_order: 0,
       });
     if (fileError) throw fileError;
+  };
+
+  const MAX_CONCURRENT = 3;
+
+  const runParallelUploads = async (filesToUpload: UploadFile[]) => {
+    // Initialize parallel progress tracking
+    const initialProgress: Record<string, { name: string; progress: UploadProgress | null; status: "uploading" | "done" | "error" }> = {};
+    for (const f of filesToUpload) {
+      initialProgress[f.id] = { name: f.file.name, progress: null, status: "uploading" };
+    }
+    setParallelProgress(initialProgress);
+
+    let completedCount = 0;
+    const total = filesToUpload.length;
+    const queue = [...filesToUpload];
+    const errors: string[] = [];
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const uploadFile = queue.shift()!;
+        try {
+          const filePrice = uploadFile.pricingEnabled ? parseFloat(uploadFile.price) || 0 : 0;
+          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, filePrice, uploadFile.watermarksEnabled, uploadFile.folderId, true);
+          setParallelProgress((prev) => ({
+            ...prev,
+            [uploadFile.id]: { ...prev[uploadFile.id], status: "done" },
+          }));
+          completedCount++;
+          setUploadProgress(Math.round((completedCount / total) * 100));
+        } catch (err: any) {
+          errors.push(uploadFile.title || uploadFile.file.name);
+          setParallelProgress((prev) => ({
+            ...prev,
+            [uploadFile.id]: { ...prev[uploadFile.id], status: "error" },
+          }));
+          completedCount++;
+          setUploadProgress(Math.round((completedCount / total) * 100));
+        }
+      }
+    };
+
+    const workers = Array.from({ length: Math.min(MAX_CONCURRENT, total) }, () => worker());
+    await Promise.all(workers);
+
+    if (errors.length > 0) {
+      toast.error(`Failed to upload: ${errors.join(", ")}`);
+    }
+    return total - errors.length;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
