@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { WatermarkUploader } from "./WatermarkUploader";
+import { resumableUpload, formatBytes, formatEta, type UploadProgress } from "@/lib/resumable-upload";
 
 interface UploadFile {
   id: string;
@@ -46,6 +47,8 @@ export const VideoUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [currentFileProgress, setCurrentFileProgress] = useState<UploadProgress | null>(null);
+  const [currentFileName, setCurrentFileName] = useState<string>("");
   const [uploadedCount, setUploadedCount] = useState(0);
   const [tier, setTier] = useState<SubscriptionTier>("basic");
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
@@ -222,15 +225,24 @@ export const VideoUploader = () => {
     }
   };
 
+  const uploadFileToStorage = async (file: File, filePath: string, fileName: string): Promise<void> => {
+    setCurrentFileName(fileName);
+    setCurrentFileProgress(null);
+    await resumableUpload({
+      bucket: "videos",
+      path: filePath,
+      file,
+      onProgress: (progress) => setCurrentFileProgress(progress),
+      onError: (err) => console.error(`Upload error for ${fileName}:`, err),
+    });
+  };
+
   const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null) => {
     if (!user) throw new Error("Not authenticated");
     const ext = uploadFile.file.name.split(".").pop();
     const filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("videos")
-      .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
-    if (uploadError) throw uploadError;
+    await uploadFileToStorage(uploadFile.file, filePath, uploadFile.file.name);
 
     const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id, uploadFile.previewImage);
 
@@ -327,14 +339,11 @@ export const VideoUploader = () => {
         const primaryPath = `${user.id}/${crypto.randomUUID()}.${primaryExt}`;
 
         setUploadProgress(10);
-        const { error: primaryUploadError } = await supabase.storage
-          .from("videos")
-          .upload(primaryPath, primaryFile.file, { cacheControl: "3600", upsert: false });
-        if (primaryUploadError) throw primaryUploadError;
+        await uploadFileToStorage(primaryFile.file, primaryPath, primaryFile.file.name);
 
         setUploadProgress(30);
 
-        // Generate thumbnail: prefer bundle preview image, then image file, then video, then audio preview
+        // Generate thumbnail
         const thumbFile = files.find((f) => f.type === "image") || files.find((f) => f.type === "video") || primaryFile;
         const previewImg = bundlePreviewImage || files.find((f) => f.type === "audio" && f.previewImage)?.previewImage;
         const thumbnailUrl = previewImg
@@ -372,10 +381,7 @@ export const VideoUploader = () => {
           } else {
             const ext = uploadFile.file.name.split(".").pop();
             filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
-            const { error: uploadError } = await supabase.storage
-              .from("videos")
-              .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
-            if (uploadError) throw uploadError;
+            await uploadFileToStorage(uploadFile.file, filePath, uploadFile.file.name);
           }
 
           const { error: fileError } = await supabase
@@ -429,6 +435,8 @@ export const VideoUploader = () => {
             setFolderId(null);
             setUploadedCount(0);
             setBundlePreviewImage(null);
+            setCurrentFileProgress(null);
+            setCurrentFileName("");
           }}>
             Upload Another
           </Button>
@@ -686,12 +694,27 @@ export const VideoUploader = () => {
 
       {/* Upload Progress */}
       {isUploading && (
-        <div className="mb-6 space-y-2">
+        <div className="mb-6 space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Uploading {files.length} file{files.length !== 1 ? "s" : ""}...</span>
             <span className="text-muted-foreground">{uploadProgress}%</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
+          {currentFileProgress && currentFileName && (
+            <div className="rounded-lg border border-border bg-background/50 p-3 space-y-2">
+              <p className="text-xs font-medium truncate">{currentFileName}</p>
+              <Progress value={currentFileProgress.percentage} className="h-1.5" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>
+                  {formatBytes(currentFileProgress.bytesUploaded)} / {formatBytes(currentFileProgress.bytesTotal)}
+                </span>
+                <span>
+                  {currentFileProgress.speed > 0 && `${formatBytes(currentFileProgress.speed)}/s · `}
+                  {formatEta(currentFileProgress.eta)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
