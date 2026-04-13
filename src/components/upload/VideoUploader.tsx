@@ -764,7 +764,41 @@ export const VideoUploader = () => {
             <span className="text-muted-foreground">{uploadProgress}%</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
-          {currentFileProgress && currentFileName && (
+
+          {/* Parallel per-file progress (individual mode) */}
+          {Object.keys(parallelProgress).length > 0 && (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {Object.entries(parallelProgress).map(([id, entry]) => (
+                <div key={id} className="rounded-lg border border-border bg-background/50 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium truncate flex-1">{entry.name}</p>
+                    <span className={cn("text-xs font-medium shrink-0", {
+                      "text-accent": entry.status === "uploading",
+                      "text-green-500": entry.status === "done",
+                      "text-destructive": entry.status === "error",
+                    })}>
+                      {entry.status === "done" ? "✓ Done" : entry.status === "error" ? "✗ Failed" : `${entry.progress?.percentage ?? 0}%`}
+                    </span>
+                  </div>
+                  {entry.status === "uploading" && entry.progress && (
+                    <>
+                      <Progress value={entry.progress.percentage} className="h-1.5" />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{formatBytes(entry.progress.bytesUploaded)} / {formatBytes(entry.progress.bytesTotal)}</span>
+                        <span>
+                          {entry.progress.speed > 0 && `${formatBytes(entry.progress.speed)}/s · `}
+                          {formatEta(entry.progress.eta)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Single file progress (bundle mode) */}
+          {Object.keys(parallelProgress).length === 0 && currentFileProgress && currentFileName && (
             <div className="rounded-lg border border-border bg-background/50 p-3 space-y-2">
               <p className="text-xs font-medium truncate">{currentFileName}</p>
               <Progress value={currentFileProgress.percentage} className="h-1.5" />
