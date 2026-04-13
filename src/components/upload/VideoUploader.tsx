@@ -47,6 +47,8 @@ export const VideoUploader = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [currentFileProgress, setCurrentFileProgress] = useState<UploadProgress | null>(null);
+  const [currentFileName, setCurrentFileName] = useState<string>("");
   const [uploadedCount, setUploadedCount] = useState(0);
   const [tier, setTier] = useState<SubscriptionTier>("basic");
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
