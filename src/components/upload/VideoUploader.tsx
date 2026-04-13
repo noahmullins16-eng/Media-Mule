@@ -389,17 +389,13 @@ export const VideoUploader = () => {
     }
 
     setIsUploading(true);
-    setUploadProgress(5);
+    setUploadProgress(0);
+    setParallelProgress({});
 
     try {
       if (uploadMode === "individual") {
-        for (let i = 0; i < files.length; i++) {
-          const uploadFile = files[i];
-          const filePrice = uploadFile.pricingEnabled ? parseFloat(uploadFile.price) || 0 : 0;
-          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, filePrice, uploadFile.watermarksEnabled, uploadFile.folderId);
-          setUploadProgress(Math.round(((i + 1) / files.length) * 100));
-        }
-        setUploadedCount(files.length);
+        const successCount = await runParallelUploads(files);
+        setUploadedCount(successCount);
       } else {
         // Bundle mode — original behavior
         const primaryFile = files.find((f) => f.type === "video") || files[0];
