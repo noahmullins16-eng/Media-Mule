@@ -225,15 +225,24 @@ export const VideoUploader = () => {
     }
   };
 
+  const uploadFileToStorage = async (file: File, filePath: string, fileName: string): Promise<void> => {
+    setCurrentFileName(fileName);
+    setCurrentFileProgress(null);
+    await resumableUpload({
+      bucket: "videos",
+      path: filePath,
+      file,
+      onProgress: (progress) => setCurrentFileProgress(progress),
+      onError: (err) => console.error(`Upload error for ${fileName}:`, err),
+    });
+  };
+
   const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number, fileWatermarks: boolean, fileFolderId: string | null) => {
     if (!user) throw new Error("Not authenticated");
     const ext = uploadFile.file.name.split(".").pop();
     const filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("videos")
-      .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
-    if (uploadError) throw uploadError;
+    await uploadFileToStorage(uploadFile.file, filePath, uploadFile.file.name);
 
     const thumbnailUrl = await uploadThumbnail(uploadFile.file, uploadFile.type, user.id, uploadFile.previewImage);
 
