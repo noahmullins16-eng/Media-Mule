@@ -42,15 +42,11 @@ export const resumableUpload = async ({
     let lastBytes = 0;
     let lastTime = Date.now();
     let currentSpeed = 0;
-    let currentChunk = INITIAL_CHUNK;
-
-    // Exponential moving average for smooth speed readings
-    const SPEED_ALPHA = 0.3;
 
     const upload = new tus.Upload(file, {
       endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
       retryDelays: [0, 1000, 3000, 5000, 10000],
-      chunkSize: currentChunk,
+      chunkSize: CHUNK_SIZE,
       headers: {
         authorization: `Bearer ${accessToken}`,
         "x-upsert": "false",
@@ -75,20 +71,12 @@ export const resumableUpload = async ({
 
         if (elapsed >= 0.5) {
           const instantSpeed = bytesDelta / elapsed;
-          // Smooth with EMA
           currentSpeed = currentSpeed === 0
             ? instantSpeed
-            : SPEED_ALPHA * instantSpeed + (1 - SPEED_ALPHA) * currentSpeed;
+            : 0.3 * instantSpeed + 0.7 * currentSpeed;
 
           lastBytes = bytesUploaded;
           lastTime = now;
-
-          // Adapt chunk size for next chunk
-          const newChunk = adaptiveChunkSize(currentSpeed);
-          if (newChunk !== currentChunk) {
-            currentChunk = newChunk;
-            (upload.options as any).chunkSize = currentChunk;
-          }
         }
 
         const remaining = bytesTotal - bytesUploaded;
