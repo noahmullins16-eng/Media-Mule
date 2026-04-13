@@ -226,15 +226,34 @@ export const VideoUploader = () => {
     }
   };
 
-  const uploadFileToStorage = async (file: File, filePath: string, fileName: string): Promise<void> => {
-    setCurrentFileName(fileName);
-    setCurrentFileProgress(null);
+  const uploadFileToStorage = async (file: File, filePath: string, fileName: string, fileId?: string): Promise<void> => {
+    if (!fileId) {
+      setCurrentFileName(fileName);
+      setCurrentFileProgress(null);
+    }
     await resumableUpload({
       bucket: "videos",
       path: filePath,
       file,
-      onProgress: (progress) => setCurrentFileProgress(progress),
-      onError: (err) => console.error(`Upload error for ${fileName}:`, err),
+      onProgress: (progress) => {
+        if (fileId) {
+          setParallelProgress((prev) => ({
+            ...prev,
+            [fileId]: { ...prev[fileId], progress },
+          }));
+        } else {
+          setCurrentFileProgress(progress);
+        }
+      },
+      onError: (err) => {
+        console.error(`Upload error for ${fileName}:`, err);
+        if (fileId) {
+          setParallelProgress((prev) => ({
+            ...prev,
+            [fileId]: { ...prev[fileId], status: "error" },
+          }));
+        }
+      },
     });
   };
 
