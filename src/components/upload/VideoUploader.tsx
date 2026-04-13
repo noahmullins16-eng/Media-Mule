@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { WatermarkUploader } from "./WatermarkUploader";
+import { resumableUpload, formatBytes, formatEta, type UploadProgress } from "@/lib/resumable-upload";
 
 interface UploadFile {
   id: string;
