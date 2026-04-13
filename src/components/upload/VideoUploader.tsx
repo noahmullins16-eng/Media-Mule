@@ -339,23 +339,9 @@ export const VideoUploader = () => {
         const primaryPath = `${user.id}/${crypto.randomUUID()}.${primaryExt}`;
 
         setUploadProgress(10);
-        const { error: primaryUploadError } = await supabase.storage
-          .from("videos")
-          .upload(primaryPath, primaryFile.file, { cacheControl: "3600", upsert: false });
-        if (primaryUploadError) throw primaryUploadError;
+        await uploadFileToStorage(primaryFile.file, primaryPath, primaryFile.file.name);
 
         setUploadProgress(30);
-
-        // Generate thumbnail: prefer bundle preview image, then image file, then video, then audio preview
-        const thumbFile = files.find((f) => f.type === "image") || files.find((f) => f.type === "video") || primaryFile;
-        const previewImg = bundlePreviewImage || files.find((f) => f.type === "audio" && f.previewImage)?.previewImage;
-        const thumbnailUrl = previewImg
-          ? await uploadThumbnail(previewImg, "image", user.id)
-          : await uploadThumbnail(thumbFile.file, thumbFile.type, user.id);
-
-        const { data: videoRecord, error: dbError } = await supabase
-          .from("videos")
-          .insert({
             user_id: user.id,
             title,
             description: description || null,
