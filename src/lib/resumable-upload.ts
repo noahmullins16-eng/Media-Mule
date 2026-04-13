@@ -2,7 +2,7 @@ import * as tus from "tus-js-client";
 import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const CHUNK_SIZE = 6 * 1024 * 1024; // 6 MB chunks
+const CHUNK_SIZE = 20 * 1024 * 1024; // 20 MB chunks
 
 export interface UploadProgress {
   bytesUploaded: number;
