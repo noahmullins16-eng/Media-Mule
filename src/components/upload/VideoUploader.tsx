@@ -435,6 +435,8 @@ export const VideoUploader = () => {
             setFolderId(null);
             setUploadedCount(0);
             setBundlePreviewImage(null);
+            setCurrentFileProgress(null);
+            setCurrentFileName("");
           }}>
             Upload Another
           </Button>
