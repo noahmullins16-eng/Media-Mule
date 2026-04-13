@@ -88,7 +88,7 @@ export const resumableUpload = async ({
           percentage: Math.round((bytesUploaded / bytesTotal) * 100),
           speed: currentSpeed,
           eta,
-          chunkSize: currentChunk,
+          chunkSize: CHUNK_SIZE,
         });
       },
       onSuccess: () => {
