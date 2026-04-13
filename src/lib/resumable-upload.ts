@@ -2,6 +2,11 @@ import * as tus from "tus-js-client";
 import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+const RESUMABLE_UPLOAD_ENDPOINT = SUPABASE_PROJECT_ID
+  ? `https://${SUPABASE_PROJECT_ID}.storage.supabase.co/storage/v1/upload/resumable`
+  : `${SUPABASE_URL}/storage/v1/upload/resumable`;
 
 // Fixed chunk size that stays within Supabase's upload limit
 const CHUNK_SIZE = 6 * 1024 * 1024; // 6 MB
@@ -44,14 +49,14 @@ export const resumableUpload = async ({
     let currentSpeed = 0;
 
     const upload = new tus.Upload(file, {
-      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
+      endpoint: RESUMABLE_UPLOAD_ENDPOINT,
       retryDelays: [0, 1000, 3000, 5000, 10000],
       chunkSize: CHUNK_SIZE,
       headers: {
         authorization: `Bearer ${accessToken}`,
         "x-upsert": "false",
       },
-      uploadDataDuringCreation: true,
+      uploadDataDuringCreation: false,
       removeFingerprintOnSuccess: true,
       metadata: {
         bucketName: bucket,
