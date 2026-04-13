@@ -2,7 +2,19 @@ import * as tus from "tus-js-client";
 import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const CHUNK_SIZE = 20 * 1024 * 1024; // 20 MB chunks
+
+// Adaptive chunk sizing: start moderate, scale up based on measured speed
+const MIN_CHUNK = 6 * 1024 * 1024;   // 6 MB floor
+const MAX_CHUNK = 50 * 1024 * 1024;  // 50 MB ceiling
+const INITIAL_CHUNK = 10 * 1024 * 1024; // 10 MB starting point
+
+/** Pick chunk size based on measured upload speed */
+const adaptiveChunkSize = (bytesPerSecond: number): number => {
+  if (bytesPerSecond <= 0) return INITIAL_CHUNK;
+  // Target ~2-3 seconds per chunk for responsive progress updates
+  const ideal = Math.round(bytesPerSecond * 2.5);
+  return Math.max(MIN_CHUNK, Math.min(MAX_CHUNK, ideal));
+};
 
 export interface UploadProgress {
   bytesUploaded: number;
@@ -10,6 +22,7 @@ export interface UploadProgress {
   percentage: number;
   speed: number; // bytes per second
   eta: number; // seconds remaining
+  chunkSize: number; // current adaptive chunk size
 }
 
 export interface ResumableUploadOptions {
@@ -36,14 +49,18 @@ export const resumableUpload = async ({
   if (!accessToken) throw new Error("Not authenticated");
 
   return new Promise((resolve, reject) => {
-    let startTime = Date.now();
     let lastBytes = 0;
-    let lastTime = startTime;
+    let lastTime = Date.now();
+    let currentSpeed = 0;
+    let currentChunk = INITIAL_CHUNK;
+
+    // Exponential moving average for smooth speed readings
+    const SPEED_ALPHA = 0.3;
 
     const upload = new tus.Upload(file, {
       endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
       retryDelays: [0, 1000, 3000, 5000, 10000],
-      chunkSize: CHUNK_SIZE,
+      chunkSize: currentChunk,
       headers: {
         authorization: `Bearer ${accessToken}`,
         "x-upsert": "false",
@@ -66,23 +83,34 @@ export const resumableUpload = async ({
         const elapsed = (now - lastTime) / 1000;
         const bytesDelta = bytesUploaded - lastBytes;
 
-        // Calculate speed (smoothed over at least 0.5s intervals)
-        let speed = 0;
         if (elapsed >= 0.5) {
-          speed = bytesDelta / elapsed;
+          const instantSpeed = bytesDelta / elapsed;
+          // Smooth with EMA
+          currentSpeed = currentSpeed === 0
+            ? instantSpeed
+            : SPEED_ALPHA * instantSpeed + (1 - SPEED_ALPHA) * currentSpeed;
+
           lastBytes = bytesUploaded;
           lastTime = now;
+
+          // Adapt chunk size for next chunk
+          const newChunk = adaptiveChunkSize(currentSpeed);
+          if (newChunk !== currentChunk) {
+            currentChunk = newChunk;
+            (upload.options as any).chunkSize = currentChunk;
+          }
         }
 
         const remaining = bytesTotal - bytesUploaded;
-        const eta = speed > 0 ? remaining / speed : 0;
+        const eta = currentSpeed > 0 ? remaining / currentSpeed : 0;
 
         onProgress?.({
           bytesUploaded,
           bytesTotal,
           percentage: Math.round((bytesUploaded / bytesTotal) * 100),
-          speed,
+          speed: currentSpeed,
           eta,
+          chunkSize: currentChunk,
         });
       },
       onSuccess: () => {
@@ -90,7 +118,6 @@ export const resumableUpload = async ({
       },
     });
 
-    // Check for previous uploads to resume
     upload.findPreviousUploads().then((previousUploads) => {
       if (previousUploads.length > 0) {
         upload.resumeFromPreviousUpload(previousUploads[0]);
