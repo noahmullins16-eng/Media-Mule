@@ -692,12 +692,27 @@ export const VideoUploader = () => {
 
       {/* Upload Progress */}
       {isUploading && (
-        <div className="mb-6 space-y-2">
+        <div className="mb-6 space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Uploading {files.length} file{files.length !== 1 ? "s" : ""}...</span>
             <span className="text-muted-foreground">{uploadProgress}%</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
+          {currentFileProgress && currentFileName && (
+            <div className="rounded-lg border border-border bg-background/50 p-3 space-y-2">
+              <p className="text-xs font-medium truncate">{currentFileName}</p>
+              <Progress value={currentFileProgress.percentage} className="h-1.5" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>
+                  {formatBytes(currentFileProgress.bytesUploaded)} / {formatBytes(currentFileProgress.bytesTotal)}
+                </span>
+                <span>
+                  {currentFileProgress.speed > 0 && `${formatBytes(currentFileProgress.speed)}/s · `}
+                  {formatEta(currentFileProgress.eta)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
