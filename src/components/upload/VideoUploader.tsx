@@ -501,6 +501,7 @@ export const VideoUploader = () => {
             setBundlePreviewImage(null);
             setCurrentFileProgress(null);
             setCurrentFileName("");
+            setParallelProgress({});
           }}>
             Upload Another
           </Button>
