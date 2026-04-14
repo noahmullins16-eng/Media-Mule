@@ -34,11 +34,11 @@ export const EmailChangeEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Img
-          src="https://fyocavwmovqrctcxbkvs.supabase.co/storage/v1/object/public/email-assets/logo.png"
+          src="https://mediamuleco.com/favicon.png"
           alt="Media Mule"
-          width="64"
-          height="64"
-          style={{ marginBottom: '24px', borderRadius: '12px' }}
+          width="48"
+          height="48"
+          style={{ marginBottom: '24px' }}
         />
         <Heading style={h1}>Confirm your email change</Heading>
         <Text style={text}>

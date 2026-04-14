@@ -34,18 +34,21 @@ export const SignupEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Img
-          src="https://fyocavwmovqrctcxbkvs.supabase.co/storage/v1/object/public/email-assets/logo.png"
+          src="https://mediamuleco.com/favicon.png"
           alt="Media Mule"
-          width="64"
-          height="64"
-          style={{ marginBottom: '24px', borderRadius: '12px' }}
+          width="48"
+          height="48"
+          style={{ marginBottom: '24px' }}
         />
         <Heading style={h1}>Hi there,</Heading>
         <Text style={text}>
           Welcome to Media Mule! We're excited to have you join our community.
         </Text>
         <Text style={text}>
-          Media Mule is designed to make working with media simple and secure.
+          Media Mule is designed to make working with media simple and secure. Our
+          platform allows creators and clients to safely exchange media files and
+          payments through a built-in escrow system, giving both sides confidence
+          throughout the process.
         </Text>
         <Text style={text}>
           To get started, please confirm your email address by clicking the link below:

@@ -25,7 +25,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate("/");
     }
   }, [user, navigate]);
 
@@ -68,7 +68,7 @@ const Auth = () => {
             : error.message);
         } else {
           toast.success("Welcome back!");
-          navigate("/dashboard");
+          navigate("/");
         }
       } else {
         const { error } = await signUp(email, password);
