@@ -51,26 +51,61 @@ export const VideoUploader = () => {
   const [currentFileName, setCurrentFileName] = useState<string>("");
   const [uploadedCount, setUploadedCount] = useState(0);
   const [parallelProgress, setParallelProgress] = useState<Record<string, { name: string; progress: UploadProgress | null; status: "uploading" | "done" | "error" }>>({});
-  const [tier, setTier] = useState<SubscriptionTier>("basic");
+  const [tier, setTier] = useState<SubscriptionTier | null>(null);
+  const [isCreatorDataLoading, setIsCreatorDataLoading] = useState(true);
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
   const [bundlePreviewImage, setBundlePreviewImage] = useState<File | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchData = async () => {
-      const [tierRes, foldersRes] = await Promise.all([
-        supabase.from("creator_profiles").select("tier").eq("user_id", user.id).single(),
-        supabase.from("media_folders").select("id, name").eq("user_id", user.id).order("sort_order"),
-      ]);
-      if (tierRes.data?.tier) setTier(tierRes.data.tier as SubscriptionTier);
-      if (foldersRes.data) setFolders(foldersRes.data);
-    };
-    fetchData();
+  const loadCreatorData = useCallback(async (): Promise<SubscriptionTier | null> => {
+    if (!user) {
+      setTier(null);
+      setFolders([]);
+      setIsCreatorDataLoading(false);
+      return null;
+    }
+
+    setIsCreatorDataLoading(true);
+
+    const [tierRes, foldersRes] = await Promise.all([
+      supabase.from("creator_profiles").select("tier").eq("user_id", user.id).single(),
+      supabase.from("media_folders").select("id, name").eq("user_id", user.id).order("sort_order"),
+    ]);
+
+    if (tierRes.error) {
+      console.error("Failed to load creator tier:", tierRes.error);
+      setTier(null);
+    } else {
+      setTier((tierRes.data?.tier as SubscriptionTier | undefined) ?? "starter");
+    }
+
+    if (foldersRes.error) {
+      console.error("Failed to load media folders:", foldersRes.error);
+      setFolders([]);
+    } else {
+      setFolders(foldersRes.data ?? []);
+    }
+
+    setIsCreatorDataLoading(false);
+    return (tierRes.data?.tier as SubscriptionTier | undefined) ?? null;
   }, [user]);
 
-  const tierConfig = TIER_CONFIG[tier];
+  useEffect(() => {
+    void loadCreatorData();
+  }, [loadCreatorData]);
+
+  const tierConfig = tier ? TIER_CONFIG[tier] : null;
+
+  const getUploadErrorMessage = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+
+    if (/413|maximum size exceeded/i.test(message)) {
+      return "This upload is hitting the backend upload size limit, not your creator plan. Increase the backend instance size for multi-GB uploads.";
+    }
+
+    return message || "Failed to upload content";
+  };
 
   const getFileType = (file: File): "video" | "image" | "audio" => {
     if (file.type.startsWith("video/")) return "video";
@@ -78,26 +113,40 @@ export const VideoUploader = () => {
     return "image";
   };
 
-  const validateFile = (f: File): boolean => {
+  const validateFile = (f: File, activeTierConfig = tierConfig): boolean => {
     const ext = f.name.split(".").pop()?.toLowerCase();
     const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav", "m4a"].includes(ext || "");
     if (!isSupported) {
       toast.error(`"${f.name}" is not a supported file type (video, image, or audio)`);
       return false;
     }
-    if (f.size > tierConfig.maxFileSize) {
+
+    if (!activeTierConfig) {
+      toast.error("We couldn't load your plan details yet. Please wait a moment and try again.");
+      return false;
+    }
+
+    if (f.size > activeTierConfig.maxFileSize) {
       toast.error(
-        `"${f.name}" exceeds your ${tierConfig.label} plan limit of ${tierConfig.maxFileSizeLabel}.`
+        `"${f.name}" exceeds your ${activeTierConfig.label} plan limit of ${activeTierConfig.maxFileSizeLabel}.`
       );
       return false;
     }
     return true;
   };
 
-  const addFiles = useCallback((newFiles: FileList | File[]) => {
+  const addFiles = useCallback(async (newFiles: FileList | File[]) => {
+    const freshTier = await loadCreatorData();
+    const activeTierConfig = freshTier ? TIER_CONFIG[freshTier] : tierConfig;
+
+    if (!activeTierConfig) {
+      toast.error("We couldn't load your plan details. Refresh the page and try again.");
+      return;
+    }
+
     const validFiles: UploadFile[] = [];
     for (const f of Array.from(newFiles)) {
-      if (validateFile(f)) {
+      if (validateFile(f, activeTierConfig)) {
         const nameWithoutExt = f.name.replace(/\.[^/.]+$/, "");
         validFiles.push({
           id: crypto.randomUUID(),
@@ -116,7 +165,7 @@ export const VideoUploader = () => {
     if (validFiles.length > 0) {
       setFiles((prev) => [...prev, ...validFiles]);
     }
-  }, [tierConfig]);
+  }, [loadCreatorData, tierConfig]);
 
   const updateFileDetail = (id: string, field: keyof UploadFile, value: any) => {
     setFiles((prev) => prev.map((f) => f.id === id ? { ...f, [field]: value } : f));
@@ -137,13 +186,13 @@ export const VideoUploader = () => {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      addFiles(e.dataTransfer.files);
+      void addFiles(e.dataTransfer.files);
     }
   }, [addFiles]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      addFiles(e.target.files);
+      void addFiles(e.target.files);
       e.target.value = "";
     }
   };
@@ -354,6 +403,11 @@ export const VideoUploader = () => {
       return;
     }
 
+    if (!tierConfig) {
+      toast.error("We couldn't load your plan details yet. Please wait a moment and try again.");
+      return;
+    }
+
     if (files.length === 0) {
       toast.error("Please add at least one file");
       return;
@@ -469,7 +523,7 @@ export const VideoUploader = () => {
       toast.success("Content uploaded successfully!");
     } catch (err: any) {
       console.error("Upload error:", err);
-      toast.error(err.message || "Failed to upload content");
+      toast.error(getUploadErrorMessage(err));
     } finally {
       setIsUploading(false);
     }
@@ -544,16 +598,23 @@ export const VideoUploader = () => {
               onChange={handleFileChange}
               className="hidden"
               multiple
+              disabled={isUploading || isCreatorDataLoading}
             />
             <Button type="button" variant="heroOutline" asChild>
-              <span>Browse Files</span>
+              <span>{isCreatorDataLoading ? "Loading Plan..." : "Browse Files"}</span>
             </Button>
           </label>
           <p className="text-xs text-muted-foreground mt-3">
-            Videos, images & audio · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
-            {tier !== "enterprise" && (
+            {isCreatorDataLoading
+              ? "Loading your plan details..."
+              : tierConfig
+              ? <>
+                  Videos, images & audio · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
+                  {tier !== "enterprise" && (
               <> · <Link to="/pricing" className="text-accent hover:underline">Upgrade for more</Link></>
-            )}
+                  )}
+                </>
+              : "We couldn't load your plan details. Refresh and try again."}
           </p>
         </div>
       </div>
