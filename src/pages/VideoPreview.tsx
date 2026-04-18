@@ -1,0 +1,158 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Header } from "@/components/landing/Header";
+import { VideoPaywall } from "@/components/video/VideoPaywall";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import type { BundleFile } from "./Video";
+
+const VideoPreview = () => {
+  const { id } = useParams<{ id: string }>();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [video, setVideo] = useState<{
+    title: string;
+    description: string;
+    thumbnail: string;
+    price: number;
+    duration: string;
+    creator: string;
+    videoUrl: string;
+    watermarksEnabled: boolean;
+    userId: string;
+    customWatermarkUrl: string | null;
+    bundleFiles: BundleFile[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [useCustomWatermark, setUseCustomWatermark] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth");
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    const fetchVideo = async () => {
+      if (!id || !user) { setLoading(false); return; }
+
+      const { data, error } = await supabase
+        .from("videos")
+        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error || !data) { setVideo(null); setLoading(false); return; }
+      if (data.user_id !== user.id) { navigate(`/video/${id}`); return; }
+
+      // Fetch bundle files
+      const { data: filesData } = await supabase
+        .from("video_files")
+        .select("*")
+        .eq("video_id", id)
+        .order("sort_order", { ascending: true });
+
+      const bundleFiles: BundleFile[] = [];
+      let primaryVideoUrl = "";
+
+      if (filesData && filesData.length > 0) {
+        for (const f of filesData) {
+          const { data: signedData } = await supabase.storage
+            .from("videos")
+            .createSignedUrl(f.file_path, 3600);
+          const bf: BundleFile = { ...f, signedUrl: signedData?.signedUrl || "" };
+          bundleFiles.push(bf);
+          if (!primaryVideoUrl && f.file_type === "video" && signedData?.signedUrl) {
+            primaryVideoUrl = signedData.signedUrl;
+          }
+        }
+      } else if (data.file_path) {
+        const { data: signedData } = await supabase.storage
+          .from("videos")
+          .createSignedUrl(data.file_path, 3600);
+        if (signedData?.signedUrl) primaryVideoUrl = signedData.signedUrl;
+      }
+
+      let customWatermarkUrl: string | null = null;
+      let creatorUsername = "Media Mule Creator";
+      const { data: profileData } = await supabase
+        .from("creator_profiles")
+        .select("custom_watermark_path, username")
+        .eq("user_id", data.user_id)
+        .maybeSingle();
+
+      if (profileData?.username) creatorUsername = profileData.username;
+      if (profileData?.custom_watermark_path) {
+        const { data: wmUrl } = supabase.storage
+          .from("watermarks")
+          .getPublicUrl(profileData.custom_watermark_path);
+        customWatermarkUrl = wmUrl?.publicUrl || null;
+      }
+
+      setVideo({
+        title: data.title,
+        description: data.description || "No description provided.",
+        thumbnail: data.thumbnail_url || "/placeholder.svg",
+        price: Number(data.price),
+        duration: data.status === "published" ? "Available now" : "Processing",
+        creator: creatorUsername,
+        videoUrl: primaryVideoUrl,
+        watermarksEnabled: data.watermarks_enabled !== false,
+        userId: data.user_id,
+        customWatermarkUrl,
+        bundleFiles,
+      });
+      if (customWatermarkUrl) setUseCustomWatermark(true);
+      setLoading(false);
+    };
+    fetchVideo();
+  }, [id, user]);
+
+  const handleToggleWatermark = async (newValue: boolean) => {
+    if (!id) return;
+    const { error } = await supabase
+      .from("videos")
+      .update({ watermarks_enabled: newValue })
+      .eq("id", id);
+    if (!error && video) setVideo({ ...video, watermarksEnabled: newValue });
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 pt-24 pb-16 flex justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!video) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 pt-24 pb-16 text-center">
+          <h1 className="mb-4 font-display text-4xl font-bold">Video Not Found</h1>
+          <p className="text-muted-foreground">This video is unavailable.</p>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="container mx-auto px-4 pt-24 pb-16">
+        <VideoPaywall
+          {...video}
+          videoId={id}
+          isOwner={true}
+          onToggleWatermark={handleToggleWatermark}
+          useCustomWatermark={useCustomWatermark}
+          onToggleCustomWatermark={setUseCustomWatermark}
+        />
+      </main>
+    </div>
+  );
+};
+
+export default VideoPreview;

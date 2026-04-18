@@ -1,0 +1,1 @@
+ALTER TABLE public.videos ADD COLUMN sold boolean NOT NULL DEFAULT false;

@@ -1,0 +1,1 @@
+ALTER TABLE public.videos ADD COLUMN watermarks_enabled boolean NOT NULL DEFAULT true;
