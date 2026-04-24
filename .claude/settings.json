@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://api.github.com/repos/supabase/cli/releases/latest\")",
+      "Bash(curl -s -L \"https://github.com/supabase/cli/releases/latest\")"
+    ]
+  }
+}
