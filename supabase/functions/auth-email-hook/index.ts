@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 // Configuration
 const SITE_NAME = "Media Mule"
 const ROOT_DOMAIN = "mediamuleco.com"
-const FROM_DOMAIN = "notify.mediamuleco.com"
+const FROM_DOMAIN = "mediamuleco.com"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
@@ -213,10 +213,18 @@ async function handleWebhook(req: Request): Promise<Response> {
     )
   }
 
+  // Supabase Auth webhooks have structure: { data: { action_type, email, confirmation_url, ... } }
+  // But also log the full payload to debug
+  console.log('Received webhook payload:', {
+    keys: Object.keys(payload),
+    dataKeys: payload.data ? Object.keys(payload.data) : 'no data field',
+    payload: JSON.stringify(payload).slice(0, 500)
+  })
+
   if (!payload.data) {
-    console.error('Webhook payload missing data')
+    console.error('Webhook payload missing data field')
     return new Response(
-      JSON.stringify({ error: 'Invalid webhook payload' }),
+      JSON.stringify({ error: 'Invalid payload: missing data field' }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -225,13 +233,17 @@ async function handleWebhook(req: Request): Promise<Response> {
   }
 
   // Extract email action type from Supabase auth webhook
-  const emailType = payload.data.action_type
-  const recipientEmail = payload.data.email
+  const emailType = payload.data?.action_type
+  const recipientEmail = payload.data?.email
 
   if (!emailType || !recipientEmail) {
-    console.error('Webhook payload missing action_type or email', { payload: payload.data })
+    console.error('Webhook payload missing action_type or email', {
+      emailType,
+      recipientEmail,
+      dataKeys: Object.keys(payload.data || {})
+    })
     return new Response(
-      JSON.stringify({ error: 'Invalid webhook payload' }),
+      JSON.stringify({ error: 'Invalid payload: missing action_type or email' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -318,15 +330,16 @@ async function handleWebhook(req: Request): Promise<Response> {
       console.error('Resend API error', { status: response.status, error, emailType, run_id })
 
       // Log failure to audit trail
-      await supabase.from('email_send_log').insert({
+      const { error: logError } = await supabase.from('email_send_log').insert({
         message_id: messageId,
         template_name: emailType,
         recipient_email: recipientEmail,
         status: 'failed',
         error_message: `Resend API error: ${response.status} - ${error.slice(0, 500)}`,
-      }).catch(err => {
-        console.error('Failed to log email error', { err, messageId })
       })
+      if (logError) {
+        console.error('Failed to log email error', { err: logError, messageId })
+      }
 
       return new Response(JSON.stringify({ error: 'Failed to send email' }), {
         status: 500,
@@ -338,14 +351,15 @@ async function handleWebhook(req: Request): Promise<Response> {
     console.log('Email sent via Resend', { emailType, email: recipientEmail, messageId: result.id, run_id })
 
     // Log success to audit trail
-    await supabase.from('email_send_log').insert({
+    const { error: logError } = await supabase.from('email_send_log').insert({
       message_id: messageId,
       template_name: emailType,
       recipient_email: recipientEmail,
       status: 'sent',
-    }).catch(err => {
-      console.error('Failed to log email success', { err, messageId })
     })
+    if (logError) {
+      console.error('Failed to log email success', { err: logError, messageId })
+    }
 
     return new Response(
       JSON.stringify({ success: true, messageId: result.id }),
@@ -356,15 +370,16 @@ async function handleWebhook(req: Request): Promise<Response> {
     console.error('Failed to send email', { error: errorMsg, emailType, run_id })
 
     // Log exception to audit trail
-    await supabase.from('email_send_log').insert({
+    const { error: logError } = await supabase.from('email_send_log').insert({
       message_id: messageId,
       template_name: emailType,
       recipient_email: recipientEmail,
       status: 'failed',
       error_message: `Exception: ${errorMsg.slice(0, 500)}`,
-    }).catch(logErr => {
-      console.error('Failed to log email exception', { logErr, messageId })
     })
+    if (logError) {
+      console.error('Failed to log email exception', { logErr: logError, messageId })
+    }
 
     return new Response(JSON.stringify({ error: 'Failed to send email' }), {
       status: 500,
