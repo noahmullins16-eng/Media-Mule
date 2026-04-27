@@ -126,7 +126,7 @@ async function handlePreview(req: Request): Promise<Response> {
   })
 }
 
-function verifySupabaseWebhook(req: Request, secret: string): string {
+async function verifySupabaseWebhook(req: Request, secret: string, body: string): Promise<void> {
   const signature = req.headers.get('x-webhook-signature')
   const timestamp = req.headers.get('x-webhook-timestamp')
   const id = req.headers.get('x-webhook-id')
@@ -142,7 +142,31 @@ function verifySupabaseWebhook(req: Request, secret: string): string {
     throw new Error('Webhook timestamp too old')
   }
 
-  return signature
+  // Verify HMAC signature: signed_content = id.timestamp.body
+  const signed_content = `${id}.${timestamp}.${body}`
+
+  // Decode base64 secret
+  const secretBytes = new TextEncoder().encode(secret)
+  const key = await crypto.subtle.importKey(
+    'raw',
+    secretBytes,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+
+  const signatureBytes = new TextEncoder().encode(signed_content)
+  const computedSignature = await crypto.subtle.sign('HMAC', key, signatureBytes)
+  const computedSignatureHex = Array.from(new Uint8Array(computedSignature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+
+  // Extract hex part from signature (format: v1,signature_hex)
+  const expectedSignature = signature.split(',')[1]
+
+  if (computedSignatureHex !== expectedSignature) {
+    throw new Error('Invalid webhook signature')
+  }
 }
 
 // Webhook handler - verifies signature and sends email via Resend
@@ -170,10 +194,10 @@ async function handleWebhook(req: Request): Promise<Response> {
   let payload: any
   let run_id = ''
   try {
-    verifySupabaseWebhook(req, webhookSecret)
+    const bodyText = await req.text()
+    await verifySupabaseWebhook(req, webhookSecret, bodyText)
 
-    const body = await req.json()
-    payload = body
+    payload = JSON.parse(bodyText)
     run_id = payload.data?.id || `webhook-${Date.now()}`
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err)
