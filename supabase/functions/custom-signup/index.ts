@@ -43,11 +43,11 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Create user via admin API (unconfirmed)
+    // Create user via admin API with email already confirmed (no email sent by Supabase)
     const { data: user, error: createError } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: false,
+      email_confirm: true,
     })
 
     if (createError) {
@@ -65,40 +65,19 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Delete any existing unused tokens for this user
-    await supabase.from('email_verification_tokens').delete().eq('user_id', user.user.id).is('used_at', null)
-
-    // Generate token
-    const token = crypto.randomUUID()
-
-    // Insert token into database
-    const { error: tokenError } = await supabase.from('email_verification_tokens').insert({
-      user_id: user.user.id,
-      token,
-    })
-
-    if (tokenError) {
-      console.error('Error inserting token:', tokenError)
-      return new Response(JSON.stringify({ error: 'Failed to generate verification token' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Render email
+    // Render welcome email (no verification needed since email is confirmed)
     const siteUrl = 'https://mediamuleco.com'
-    const confirmationUrl = `${siteUrl}/verify-email?token=${token}`
 
     const html = await renderAsync(
       React.createElement(SignupEmail, {
         siteName: 'Media Mule',
         siteUrl,
         recipient: email,
-        confirmationUrl,
+        confirmationUrl: `${siteUrl}/auth`,
       })
     )
 
-    // Send via Resend
+    // Send welcome email via Resend
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -116,17 +95,10 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const error = await response.text()
       console.error('Resend API error:', { status: response.status, error })
-
-      // Delete the user since email sending failed
-      await supabase.auth.admin.deleteUser(user.user.id)
-
-      return new Response(JSON.stringify({ error: 'Failed to send confirmation email' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      // Don't delete user - they can still log in even if welcome email fails
     }
 
-    console.log('Signup email sent successfully', { email, userId: user.user.id })
+    console.log('Signup successful', { email, userId: user.user.id })
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

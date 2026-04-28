@@ -88,9 +88,10 @@ const Auth = () => {
         if (error) {
           toast.error("Failed to create account. Please try again.");
         } else if (data?.success) {
-          toast.success("Check your email for a confirmation link!");
+          toast.success("Account created! You can now sign in.");
           setEmail("");
           setPassword("");
+          setView("login");
         } else {
           toast.error("Failed to create account. Please try again.");
         }
