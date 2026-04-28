@@ -40,14 +40,23 @@ const Auth = () => {
 
     if (view === "forgot-password") {
       setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      setLoading(false);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Check your email for a password reset link.");
+      try {
+        const { data, error } = await supabase.functions.invoke("custom-password-reset", {
+          body: { email },
+        });
+        setLoading(false);
+
+        if (error) {
+          toast.error("Failed to send reset link. Please try again.");
+        } else if (data?.success) {
+          toast.success("Check your email for a password reset link.");
+          setEmail("");
+        } else {
+          toast.error("Failed to send reset link. Please try again.");
+        }
+      } catch (err) {
+        setLoading(false);
+        toast.error("An error occurred. Please try again.");
       }
       return;
     }
@@ -71,13 +80,19 @@ const Auth = () => {
           navigate("/");
         }
       } else {
-        const { error } = await signUp(email, password);
+        // Use custom signup instead of signUp from AuthContext
+        const { data, error } = await supabase.functions.invoke("custom-signup", {
+          body: { email, password },
+        });
+
         if (error) {
-          toast.error(error.message.includes("User already registered")
-            ? "This email is already registered. Please sign in instead."
-            : error.message);
-        } else {
+          toast.error("Failed to create account. Please try again.");
+        } else if (data?.success) {
           toast.success("Check your email for a confirmation link!");
+          setEmail("");
+          setPassword("");
+        } else {
+          toast.error("Failed to create account. Please try again.");
         }
       }
     } catch {

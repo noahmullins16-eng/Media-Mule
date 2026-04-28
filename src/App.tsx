@@ -17,6 +17,7 @@ import Video from "./pages/Video";
 import VideoPreview from "./pages/VideoPreview";
 import HowItWorks from "./pages/HowItWorks";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 import AdminDashboard from "./pages/AdminDashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const AppRoutes = () => {
       <Route path="/video/:id" element={<Video />} />
       <Route path="/preview/:id" element={<VideoPreview />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/settings" element={<Settings />} />

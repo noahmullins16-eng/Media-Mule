@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,26 +9,19 @@ import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 
 const ResetPassword = () => {
+  const [searchParams] = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [isValid, setIsValid] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    if (hashParams.get("type") === "recovery") {
-      setIsRecovery(true);
+    const token = searchParams.get("token");
+    if (token) {
+      setIsValid(true);
     }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setIsRecovery(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,19 +35,35 @@ const ResetPassword = () => {
       return;
     }
 
-    setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setLoading(false);
+    const token = searchParams.get("token");
+    if (!token) {
+      toast.error("Invalid reset link");
+      return;
+    }
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Password updated successfully!");
-      navigate("/");
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("custom-reset-confirm", {
+        body: { token, password },
+      });
+
+      setLoading(false);
+
+      if (error) {
+        toast.error("Failed to reset password. The link may have expired.");
+      } else if (data?.success) {
+        toast.success("Password updated successfully!");
+        navigate("/auth");
+      } else {
+        toast.error("Failed to reset password. Please try again.");
+      }
+    } catch (err) {
+      setLoading(false);
+      toast.error("An error occurred. Please try again.");
     }
   };
 
-  if (!isRecovery) {
+  if (!isValid) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
