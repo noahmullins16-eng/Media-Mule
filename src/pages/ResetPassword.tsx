@@ -10,18 +10,11 @@ import logo from "@/assets/logo.png";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") || new URLSearchParams(window.location.search).get("token");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isValid, setIsValid] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = searchParams.get("token");
-    if (token) {
-      setIsValid(true);
-    }
-  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +28,6 @@ const ResetPassword = () => {
       return;
     }
 
-    const token = searchParams.get("token");
     if (!token) {
       toast.error("Invalid reset link");
       return;
@@ -63,7 +55,7 @@ const ResetPassword = () => {
     }
   };
 
-  if (!isValid) {
+  if (!token) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">

@@ -6,3 +6,16 @@ project_id = "awaorpybjweyndtjnklg"
 
   [functions.process-email-queue]
     verify_jwt = true
+
+  [functions.custom-signup]
+    verify_jwt = false
+    
+  [functions.custom-password-reset]
+    verify_jwt = false
+    
+  [functions.custom-reset-confirm]
+    verify_jwt = false
+
+  [functions.custom-verify-email]
+    verify_jwt = false
+
