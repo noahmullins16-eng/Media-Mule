@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { WatermarkUploader } from "./WatermarkUploader";
+import { r2Storage } from "@/lib/r2-storage";
 
 interface UploadFile {
   id: string;
@@ -137,12 +138,12 @@ export const VideoUploader = () => {
   const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number) => {
     if (!user) throw new Error("Not authenticated");
     const ext = uploadFile.file.name.split(".").pop();
-    const filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
+    const fileName = `${crypto.randomUUID()}.${ext}`;
+    const folderPath = `${user.id}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("videos")
-      .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
-    if (uploadError) throw uploadError;
+    // Upload to R2
+    const r2Url = await r2Storage.uploadFile(uploadFile.file, fileName, folderPath);
+    if (!r2Url) throw new Error("Failed to upload to R2");
 
     const { data: videoRecord, error: dbError } = await supabase
       .from("videos")
@@ -151,11 +152,12 @@ export const VideoUploader = () => {
         title: fileTitle,
         description: fileDescription || null,
         price: priceNum,
-        file_path: filePath,
+        file_path: `${folderPath}/${fileName}`,
         file_size: uploadFile.file.size,
         status: "published",
         watermarks_enabled: watermarksEnabled,
         folder_id: folderId || null,
+        r2_url: r2Url,
       })
       .select("id")
       .single();
@@ -166,10 +168,11 @@ export const VideoUploader = () => {
       .from("video_files")
       .insert({
         video_id: videoRecord.id,
-        file_path: filePath,
+        file_path: `${folderPath}/${fileName}`,
         file_type: uploadFile.type,
         file_size: uploadFile.file.size,
         sort_order: 0,
+        storage_url: r2Url,
       });
     if (fileError) throw fileError;
   };
@@ -220,17 +223,21 @@ export const VideoUploader = () => {
         }
         setUploadedCount(files.length);
       } else {
-        // Bundle mode — original behavior
+        // Bundle mode — upload all files to R2
         const primaryFile = files.find((f) => f.type === "video") || files[0];
         const primaryExt = primaryFile.file.name.split(".").pop();
-        const primaryPath = `${user.id}/${crypto.randomUUID()}.${primaryExt}`;
+        const primaryFileName = `${crypto.randomUUID()}.${primaryExt}`;
+        const folderPath = user.id;
 
         setUploadProgress(10);
-        const { error: primaryUploadError } = await supabase.storage
-          .from("videos")
-          .upload(primaryPath, primaryFile.file, { cacheControl: "3600", upsert: false });
-        if (primaryUploadError) throw primaryUploadError;
+        const primaryR2Url = await r2Storage.uploadFile(
+          primaryFile.file,
+          primaryFileName,
+          folderPath
+        );
+        if (!primaryR2Url) throw new Error("Failed to upload primary file to R2");
 
+        const primaryPath = `${folderPath}/${primaryFileName}`;
         setUploadProgress(30);
 
         const { data: videoRecord, error: dbError } = await supabase
@@ -245,6 +252,7 @@ export const VideoUploader = () => {
             status: "published",
             watermarks_enabled: watermarksEnabled,
             folder_id: folderId || null,
+            r2_url: primaryR2Url,
           })
           .select("id")
           .single();
@@ -257,16 +265,22 @@ export const VideoUploader = () => {
         for (let i = 0; i < files.length; i++) {
           const uploadFile = files[i];
           let filePath: string;
+          let storageUrl: string;
 
           if (uploadFile.id === primaryFile.id) {
             filePath = primaryPath;
+            storageUrl = primaryR2Url;
           } else {
             const ext = uploadFile.file.name.split(".").pop();
-            filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
-            const { error: uploadError } = await supabase.storage
-              .from("videos")
-              .upload(filePath, uploadFile.file, { cacheControl: "3600", upsert: false });
-            if (uploadError) throw uploadError;
+            const fileName = `${crypto.randomUUID()}.${ext}`;
+            const r2Url = await r2Storage.uploadFile(
+              uploadFile.file,
+              fileName,
+              folderPath
+            );
+            if (!r2Url) throw new Error(`Failed to upload ${uploadFile.file.name} to R2`);
+            filePath = `${folderPath}/${fileName}`;
+            storageUrl = r2Url;
           }
 
           const { error: fileError } = await supabase
@@ -277,6 +291,7 @@ export const VideoUploader = () => {
               file_type: uploadFile.type,
               file_size: uploadFile.file.size,
               sort_order: i,
+              storage_url: storageUrl,
             });
           if (fileError) throw fileError;
 
