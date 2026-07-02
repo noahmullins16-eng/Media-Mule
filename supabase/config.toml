@@ -19,3 +19,6 @@ project_id = "awaorpybjweyndtjnklg"
   [functions.custom-verify-email]
     verify_jwt = false
 
+  [functions.generate-r2-url]
+    verify_jwt = true
+

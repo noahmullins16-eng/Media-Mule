@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
+import { storage } from "@/lib/storage";
 
 export interface BundleFile {
   id: string;
@@ -11,6 +12,7 @@ export interface BundleFile {
   file_size: number | null;
   sort_order: number;
   signedUrl?: string;
+  storage_url?: string | null;
 }
 
 const Video = () => {
@@ -40,7 +42,7 @@ const Video = () => {
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id, sold")
+        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id, sold, r2_url")
         .eq("id", id)
         .maybeSingle();
 
@@ -63,22 +65,42 @@ const Video = () => {
 
       if (filesData && filesData.length > 0) {
         for (const f of filesData) {
-          const { data: signedData } = await supabase.storage
-            .from("videos")
-            .createSignedUrl(f.file_path, 3600);
-          const bf: BundleFile = { ...f, signedUrl: signedData?.signedUrl || "" };
+          let signedUrl = "";
+          try {
+            if (f.storage_url) {
+              signedUrl = await storage.getSignedUrl(f.file_path, 3600);
+            } else {
+              const { data: signedData } = await supabase.storage
+                .from("videos")
+                .createSignedUrl(f.file_path, 3600);
+              signedUrl = signedData?.signedUrl || "";
+            }
+          } catch (err) {
+            console.error("Failed to generate signed URL for file:", f.file_path, err);
+          }
+          const bf: BundleFile = { ...f, signedUrl };
           bundleFiles.push(bf);
-          if (!primaryVideoUrl && f.file_type === "video" && signedData?.signedUrl) {
-            primaryVideoUrl = signedData.signedUrl;
+          if (!primaryVideoUrl && f.file_type === "video" && signedUrl) {
+            primaryVideoUrl = signedUrl;
           }
         }
       } else if (data.file_path) {
         // Fallback to legacy single file
-        const { data: signedData } = await supabase.storage
-          .from("videos")
-          .createSignedUrl(data.file_path, 3600);
-        if (signedData?.signedUrl) {
-          primaryVideoUrl = signedData.signedUrl;
+        let signedUrl = "";
+        try {
+          if (data.r2_url) {
+            signedUrl = await storage.getSignedUrl(data.file_path, 3600);
+          } else {
+            const { data: signedData } = await supabase.storage
+              .from("videos")
+              .createSignedUrl(data.file_path, 3600);
+            signedUrl = signedData?.signedUrl || "";
+          }
+        } catch (err) {
+          console.error("Failed to generate signed URL for legacy path:", data.file_path, err);
+        }
+        if (signedUrl) {
+          primaryVideoUrl = signedUrl;
         }
       }
 
@@ -92,10 +114,20 @@ const Video = () => {
 
       if (profileData?.username) creatorUsername = profileData.username;
       if (profileData?.custom_watermark_path) {
-        const { data: wmUrl } = supabase.storage
-          .from("watermarks")
-          .getPublicUrl(profileData.custom_watermark_path);
-        customWatermarkUrl = wmUrl?.publicUrl || null;
+        try {
+          if (profileData.custom_watermark_path.startsWith("http")) {
+            customWatermarkUrl = profileData.custom_watermark_path;
+          } else if (profileData.custom_watermark_path.includes("watermark")) {
+            customWatermarkUrl = await storage.getSignedUrl(profileData.custom_watermark_path);
+          } else {
+            const { data: wmUrl } = supabase.storage
+              .from("watermarks")
+              .getPublicUrl(profileData.custom_watermark_path);
+            customWatermarkUrl = wmUrl?.publicUrl || null;
+          }
+        } catch (err) {
+          console.error("Failed to fetch custom watermark URL:", err);
+        }
       }
 
       setVideo({

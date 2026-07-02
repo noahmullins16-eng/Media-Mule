@@ -11,6 +11,7 @@ import { downloadMedia } from "@/lib/download-media";
 import { toast } from "sonner";
 import { WatermarkUploader } from "@/components/upload/WatermarkUploader";
 import { FolderSidebar, type MediaFolder } from "@/components/folders/FolderSidebar";
+import { storage } from "@/lib/storage";
 
 interface VideoItem {
   id: string;
@@ -18,15 +19,17 @@ interface VideoItem {
   description: string | null;
   price: number;
   file_path: string;
+  thumbnail_url: string | null;
   file_size: number | null;
   status: string;
   created_at: string;
   watermarks_enabled: boolean;
   folder_id: string | null;
+  r2_url?: string | null;
 }
 
 const MyVideos = () => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
@@ -35,14 +38,12 @@ const MyVideos = () => {
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) navigate("/auth");
-  }, [user, loading, navigate]);
-
-  useEffect(() => {
-    if (user) {
-      fetchVideos();
-      fetchFolders();
+    if (!user) {
+      navigate("/auth");
+      return;
     }
+    fetchFolders();
+    fetchVideos();
   }, [user]);
 
   const fetchFolders = async () => {
@@ -67,10 +68,20 @@ const MyVideos = () => {
     } else {
       setVideos(data || []);
       (data || []).forEach(async (v: any) => {
-        const { data: signedData } = await supabase.storage
-          .from("videos")
-          .createSignedUrl(v.file_path, 3600);
-        if (signedData?.signedUrl) generateThumbnail(v.id, signedData.signedUrl);
+        let signedUrl = "";
+        try {
+          if (v.r2_url) {
+            signedUrl = await storage.getSignedUrl(v.file_path, 3600);
+          } else {
+            const { data: signedData } = await supabase.storage
+              .from("videos")
+              .createSignedUrl(v.file_path, 3600);
+            signedUrl = signedData?.signedUrl || "";
+          }
+        } catch (err) {
+          console.error("Failed to generate signed URL for thumbnail:", v.file_path, err);
+        }
+        if (signedUrl) generateThumbnail(v.id, signedUrl);
       });
     }
     setLoadingVideos(false);
@@ -97,7 +108,15 @@ const MyVideos = () => {
 
   const handleDelete = async (video: VideoItem) => {
     if (!confirm(`Delete "${video.title}"? This cannot be undone.`)) return;
-    await supabase.storage.from("videos").remove([video.file_path]);
+    try {
+      if (video.r2_url) {
+        await storage.deleteFile(video.file_path);
+      } else {
+        await supabase.storage.from("videos").remove([video.file_path]);
+      }
+    } catch (err) {
+      console.warn("Failed to delete file from storage during video delete:", err);
+    }
     const { error } = await supabase.from("videos").delete().eq("id", video.id);
     if (error) {
       toast.error("Failed to delete video");

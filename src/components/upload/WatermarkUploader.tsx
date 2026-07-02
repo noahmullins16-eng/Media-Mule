@@ -4,6 +4,7 @@ import { ImagePlus, X, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { storage } from "@/lib/storage";
 
 interface WatermarkUploaderProps {
   onWatermarkUrl: (url: string | null) => void;
@@ -18,21 +19,35 @@ export const WatermarkUploader = ({ onWatermarkUrl }: WatermarkUploaderProps) =>
   useEffect(() => {
     if (!user) return;
     const fetchExisting = async () => {
-      const { data } = await supabase
-        .from("creator_profiles")
-        .select("custom_watermark_path")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      try {
+        const { data } = await supabase
+          .from("creator_profiles")
+          .select("custom_watermark_path")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-      if (data?.custom_watermark_path) {
-        const { data: urlData } = supabase.storage
-          .from("watermarks")
-          .getPublicUrl(data.custom_watermark_path);
-        const url = urlData?.publicUrl || null;
-        setWatermarkUrl(url);
-        onWatermarkUrl(url);
+        if (data?.custom_watermark_path) {
+          let url = "";
+          if (data.custom_watermark_path.startsWith("http")) {
+            url = data.custom_watermark_path;
+          } else if (data.custom_watermark_path.includes("watermark")) {
+            // It's in R2 (stored as watermarks/userId/watermark.ext or userId/watermark.ext)
+            url = await storage.getSignedUrl(data.custom_watermark_path);
+          } else {
+            // Legacy Supabase storage path
+            const { data: urlData } = supabase.storage
+              .from("watermarks")
+              .getPublicUrl(data.custom_watermark_path);
+            url = urlData?.publicUrl || null;
+          }
+          setWatermarkUrl(url);
+          onWatermarkUrl(url);
+        }
+      } catch (err) {
+        console.error("Error fetching custom watermark:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchExisting();
   }, [user]);
@@ -54,16 +69,34 @@ export const WatermarkUploader = ({ onWatermarkUrl }: WatermarkUploaderProps) =>
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const filePath = `${user.id}/watermark.${ext}`;
+      const folderPath = `watermarks/${user.id}`;
+      const fileName = `watermark.${ext}`;
+      const filePath = `${folderPath}/${fileName}`;
 
-      // Remove old watermark if exists
-      await supabase.storage.from("watermarks").remove([filePath]);
+      // Remove old watermark from R2 / Supabase if it exists
+      const { data: profile } = await supabase
+        .from("creator_profiles")
+        .select("custom_watermark_path")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      const { error: uploadError } = await supabase.storage
-        .from("watermarks")
-        .upload(filePath, file, { cacheControl: "3600", upsert: true });
+      if (profile?.custom_watermark_path) {
+        try {
+          if (profile.custom_watermark_path.includes("watermark")) {
+            await storage.deleteFile(profile.custom_watermark_path);
+          } else {
+            // Legacy Supabase cleanup
+            await supabase.storage.from("watermarks").remove([profile.custom_watermark_path]);
+          }
+        } catch (delErr) {
+          console.warn("Failed to delete old watermark:", delErr);
+        }
+      }
 
-      if (uploadError) throw uploadError;
+      console.log("📤 Uploading custom watermark to R2:", filePath);
+      const publicUrl = await storage.uploadFile(file, fileName, folderPath);
+
+      if (!publicUrl) throw new Error("Failed to upload watermark image to R2");
 
       // Save path to profile
       const { error: dbError } = await supabase
@@ -73,15 +106,12 @@ export const WatermarkUploader = ({ onWatermarkUrl }: WatermarkUploaderProps) =>
 
       if (dbError) throw dbError;
 
-      const { data: urlData } = supabase.storage
-        .from("watermarks")
-        .getPublicUrl(filePath);
-
-      const url = urlData?.publicUrl || null;
+      const url = await storage.getSignedUrl(filePath);
       setWatermarkUrl(url);
       onWatermarkUrl(url);
       toast.success("Custom watermark saved to your profile!");
     } catch (err: any) {
+      console.error("Watermark upload error:", err);
       toast.error(err.message || "Failed to upload watermark");
     } finally {
       setUploading(false);
@@ -98,7 +128,15 @@ export const WatermarkUploader = ({ onWatermarkUrl }: WatermarkUploaderProps) =>
         .single();
 
       if (data?.custom_watermark_path) {
-        await supabase.storage.from("watermarks").remove([data.custom_watermark_path]);
+        try {
+          if (data.custom_watermark_path.includes("watermark")) {
+            await storage.deleteFile(data.custom_watermark_path);
+          } else {
+            await supabase.storage.from("watermarks").remove([data.custom_watermark_path]);
+          }
+        } catch (delErr) {
+          console.warn("Failed to delete watermark file:", delErr);
+        }
       }
 
       await supabase
@@ -110,6 +148,7 @@ export const WatermarkUploader = ({ onWatermarkUrl }: WatermarkUploaderProps) =>
       onWatermarkUrl(null);
       toast.success("Custom watermark removed. Default watermark will be used.");
     } catch (err: any) {
+      console.error("Watermark removal error:", err);
       toast.error("Failed to remove watermark");
     }
   };

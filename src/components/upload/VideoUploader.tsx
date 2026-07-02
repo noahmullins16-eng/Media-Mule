@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { WatermarkUploader } from "./WatermarkUploader";
-import { r2Storage } from "@/lib/r2-storage";
+import { storage } from "@/lib/storage";
 
 interface UploadFile {
   id: string;
@@ -136,19 +136,21 @@ export const VideoUploader = () => {
   };
 
   const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number) => {
-    if (!user) throw new Error("Not authenticated");
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) throw new Error("Not authenticated");
+
     const ext = uploadFile.file.name.split(".").pop();
     const fileName = `${crypto.randomUUID()}.${ext}`;
-    const folderPath = `${user.id}`;
+    const folderPath = `${authUser.id}`;
 
-    // Upload to R2
-    const r2Url = await r2Storage.uploadFile(uploadFile.file, fileName, folderPath);
-    if (!r2Url) throw new Error("Failed to upload to R2");
+    // Upload to Storage
+    const storageUrl = await storage.uploadFile(uploadFile.file, fileName, folderPath);
+    if (!storageUrl) throw new Error("Failed to upload to Storage");
 
     const { data: videoRecord, error: dbError } = await supabase
       .from("videos")
       .insert({
-        user_id: user.id,
+        user_id: authUser.id,
         title: fileTitle,
         description: fileDescription || null,
         price: priceNum,
@@ -157,7 +159,7 @@ export const VideoUploader = () => {
         status: "published",
         watermarks_enabled: watermarksEnabled,
         folder_id: folderId || null,
-        r2_url: r2Url,
+        r2_url: storageUrl,
       })
       .select("id")
       .single();
@@ -172,7 +174,7 @@ export const VideoUploader = () => {
         file_type: uploadFile.type,
         file_size: uploadFile.file.size,
         sort_order: 0,
-        storage_url: r2Url,
+        storage_url: storageUrl,
       });
     if (fileError) throw fileError;
   };
@@ -223,19 +225,18 @@ export const VideoUploader = () => {
         }
         setUploadedCount(files.length);
       } else {
-        // Bundle mode — upload all files to R2
+        // Bundle mode — upload all files to Storage
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) throw new Error("Not authenticated");
+
         const primaryFile = files.find((f) => f.type === "video") || files[0];
         const primaryExt = primaryFile.file.name.split(".").pop();
         const primaryFileName = `${crypto.randomUUID()}.${primaryExt}`;
-        const folderPath = user.id;
+        const folderPath = authUser.id;
 
         setUploadProgress(10);
-        const primaryR2Url = await r2Storage.uploadFile(
-          primaryFile.file,
-          primaryFileName,
-          folderPath
-        );
-        if (!primaryR2Url) throw new Error("Failed to upload primary file to R2");
+        const primaryR2Url = await storage.uploadFile(primaryFile.file, primaryFileName, folderPath);
+        if (!primaryR2Url) throw new Error("Failed to upload primary file to Storage");
 
         const primaryPath = `${folderPath}/${primaryFileName}`;
         setUploadProgress(30);
@@ -243,7 +244,7 @@ export const VideoUploader = () => {
         const { data: videoRecord, error: dbError } = await supabase
           .from("videos")
           .insert({
-            user_id: user.id,
+            user_id: authUser.id,
             title,
             description: description || null,
             price: priceNum,
@@ -273,11 +274,7 @@ export const VideoUploader = () => {
           } else {
             const ext = uploadFile.file.name.split(".").pop();
             const fileName = `${crypto.randomUUID()}.${ext}`;
-            const r2Url = await r2Storage.uploadFile(
-              uploadFile.file,
-              fileName,
-              folderPath
-            );
+            const r2Url = await storage.uploadFile(uploadFile.file, fileName, folderPath);
             if (!r2Url) throw new Error(`Failed to upload ${uploadFile.file.name} to R2`);
             filePath = `${folderPath}/${fileName}`;
             storageUrl = r2Url;

@@ -4,6 +4,7 @@ import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { storage } from "@/lib/storage";
 import type { BundleFile } from "./Video";
 
 const VideoPreview = () => {
@@ -36,7 +37,7 @@ const VideoPreview = () => {
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id")
+        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id, r2_url")
         .eq("id", id)
         .maybeSingle();
 
@@ -55,20 +56,40 @@ const VideoPreview = () => {
 
       if (filesData && filesData.length > 0) {
         for (const f of filesData) {
-          const { data: signedData } = await supabase.storage
-            .from("videos")
-            .createSignedUrl(f.file_path, 3600);
-          const bf: BundleFile = { ...f, signedUrl: signedData?.signedUrl || "" };
+          let signedUrl = "";
+          try {
+            if (f.storage_url) {
+              signedUrl = await storage.getSignedUrl(f.file_path, 3600);
+            } else {
+              const { data: signedData } = await supabase.storage
+                .from("videos")
+                .createSignedUrl(f.file_path, 3600);
+              signedUrl = signedData?.signedUrl || "";
+            }
+          } catch (err) {
+            console.error("Failed to generate signed URL for file:", f.file_path, err);
+          }
+          const bf: BundleFile = { ...f, signedUrl };
           bundleFiles.push(bf);
-          if (!primaryVideoUrl && f.file_type === "video" && signedData?.signedUrl) {
-            primaryVideoUrl = signedData.signedUrl;
+          if (!primaryVideoUrl && f.file_type === "video" && signedUrl) {
+            primaryVideoUrl = signedUrl;
           }
         }
       } else if (data.file_path) {
-        const { data: signedData } = await supabase.storage
-          .from("videos")
-          .createSignedUrl(data.file_path, 3600);
-        if (signedData?.signedUrl) primaryVideoUrl = signedData.signedUrl;
+        let signedUrl = "";
+        try {
+          if (data.r2_url) {
+            signedUrl = await storage.getSignedUrl(data.file_path, 3600);
+          } else {
+            const { data: signedData } = await supabase.storage
+              .from("videos")
+              .createSignedUrl(data.file_path, 3600);
+            signedUrl = signedData?.signedUrl || "";
+          }
+        } catch (err) {
+          console.error("Failed to generate signed URL for legacy path:", data.file_path, err);
+        }
+        if (signedUrl) primaryVideoUrl = signedUrl;
       }
 
       let customWatermarkUrl: string | null = null;
@@ -81,10 +102,20 @@ const VideoPreview = () => {
 
       if (profileData?.username) creatorUsername = profileData.username;
       if (profileData?.custom_watermark_path) {
-        const { data: wmUrl } = supabase.storage
-          .from("watermarks")
-          .getPublicUrl(profileData.custom_watermark_path);
-        customWatermarkUrl = wmUrl?.publicUrl || null;
+        try {
+          if (profileData.custom_watermark_path.startsWith("http")) {
+            customWatermarkUrl = profileData.custom_watermark_path;
+          } else if (profileData.custom_watermark_path.includes("watermark")) {
+            customWatermarkUrl = await storage.getSignedUrl(profileData.custom_watermark_path);
+          } else {
+            const { data: wmUrl } = supabase.storage
+              .from("watermarks")
+              .getPublicUrl(profileData.custom_watermark_path);
+            customWatermarkUrl = wmUrl?.publicUrl || null;
+          }
+        } catch (err) {
+          console.error("Failed to fetch custom watermark URL:", err);
+        }
       }
 
       setVideo({

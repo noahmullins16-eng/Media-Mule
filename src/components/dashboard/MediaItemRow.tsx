@@ -8,6 +8,7 @@ import { downloadMedia } from "@/lib/download-media";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { MediaFolder } from "@/components/folders/FolderSidebar";
+import { storage } from "@/lib/storage";
 
 export interface VideoItem {
   id: string;
@@ -20,6 +21,7 @@ export interface VideoItem {
   created_at: string;
   watermarks_enabled: boolean;
   folder_id: string | null;
+  r2_url?: string | null;
 }
 
 interface MediaItemRowProps {
@@ -36,13 +38,23 @@ export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRo
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const { data } = await supabase.storage.from("videos").createSignedUrl(video.file_path, 3600);
-      if (!data?.signedUrl || cancelled) return;
+      let signedUrl = "";
+      try {
+        if (video.r2_url) {
+          signedUrl = await storage.getSignedUrl(video.file_path, 3600);
+        } else {
+          const { data } = await supabase.storage.from("videos").createSignedUrl(video.file_path, 3600);
+          signedUrl = data?.signedUrl || "";
+        }
+      } catch (err) {
+        console.error("Failed to generate signed URL for MediaItemRow preview:", err);
+      }
+      if (!signedUrl || cancelled) return;
       const vid = document.createElement("video");
       vid.crossOrigin = "anonymous";
       vid.muted = true;
       vid.preload = "metadata";
-      vid.src = data.signedUrl;
+      vid.src = signedUrl;
       vid.addEventListener("loadeddata", () => { vid.currentTime = 1; });
       vid.addEventListener("seeked", () => {
         const c = document.createElement("canvas");
@@ -92,7 +104,15 @@ export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRo
 
   const handleDelete = async () => {
     if (!confirm(`Delete "${video.title}"? This cannot be undone.`)) return;
-    await supabase.storage.from("videos").remove([video.file_path]);
+    try {
+      if (video.r2_url) {
+        await storage.deleteFile(video.file_path);
+      } else {
+        await supabase.storage.from("videos").remove([video.file_path]);
+      }
+    } catch (err) {
+      console.warn("Failed to delete file from storage:", err);
+    }
     const { error } = await supabase.from("videos").delete().eq("id", video.id);
     if (error) {
       toast.error("Failed to delete video");
