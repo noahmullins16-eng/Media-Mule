@@ -39,13 +39,12 @@ export const storage = {
 
       // Upload file directly using the presigned URL
       console.log("📤 [Storage] Uploading file to R2...", { size: (file as any).size || "unknown" });
-      const buffer = await file.arrayBuffer();
       const response = await fetch(uploadUrl, {
         method: "PUT",
         headers: {
           "Content-Type": file.type || "application/octet-stream",
         },
-        body: buffer,
+        body: file,
       });
 
       if (!response.ok) {

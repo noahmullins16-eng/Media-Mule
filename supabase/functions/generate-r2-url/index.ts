@@ -39,11 +39,23 @@ serve(async (req) => {
     }
 
     const base64Url = parts[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const padLen = (4 - (base64.length % 4)) % 4;
-    const padded = base64 + "=".repeat(padLen);
-    const rawPayload = atob(padded);
-    const payload = JSON.parse(rawPayload);
+    let payload;
+    try {
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const padLen = (4 - (base64.length % 4)) % 4;
+      const padded = base64 + "=".repeat(padLen);
+      const binaryString = atob(padded);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const rawPayload = new TextDecoder().decode(bytes);
+      payload = JSON.parse(rawPayload);
+    } catch (e) {
+      console.error("Failed to decode JWT payload:", e);
+      return jsonResponse({ error: "Unauthorized: Invalid token encoding" }, 401);
+    }
     const userId = payload.sub;
 
     if (!userId) {
