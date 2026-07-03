@@ -20,5 +20,5 @@ project_id = "awaorpybjweyndtjnklg"
     verify_jwt = false
 
   [functions.generate-r2-url]
-    verify_jwt = true
+    verify_jwt = false
 
