@@ -58,7 +58,7 @@ const VideoPreview = () => {
         for (const f of filesData) {
           let signedUrl = "";
           try {
-            if (f.storage_url) {
+            if (f.storage_url && f.storage_url.includes("r2.cloudflarestorage.com")) {
               signedUrl = await storage.getSignedUrl(f.file_path, 3600);
             } else {
               const { data: signedData } = await supabase.storage
@@ -78,7 +78,7 @@ const VideoPreview = () => {
       } else if (data.file_path) {
         let signedUrl = "";
         try {
-          if (data.r2_url) {
+          if (data.r2_url && data.r2_url.includes("r2.cloudflarestorage.com")) {
             signedUrl = await storage.getSignedUrl(data.file_path, 3600);
           } else {
             const { data: signedData } = await supabase.storage

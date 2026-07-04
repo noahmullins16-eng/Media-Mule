@@ -59,9 +59,40 @@ export const storage = {
 
       console.log("✅ [Storage] Upload to R2 successful", { publicUrl });
       return publicUrl;
-    } catch (error) {
-      console.error("❌ [Storage] Upload process error", error);
-      throw error;
+    } catch (error: any) {
+      console.warn("⚠️ [Storage] R2 upload failed, falling back to Supabase Storage...", error);
+      try {
+        const targetPath = folder ? `${folder}/${fileName}` : fileName;
+        const bucketName = targetPath.startsWith("watermarks/") ? "watermarks" : "videos";
+        const cleanPath = targetPath.startsWith("watermarks/") ? targetPath.replace("watermarks/", "") : targetPath;
+
+        console.log(`📤 [Storage] Uploading to Supabase Storage fallback: bucket='${bucketName}', path='${cleanPath}'`);
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(cleanPath, file, {
+            contentType: file.type || "application/octet-stream",
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error("❌ [Storage] Supabase Storage fallback upload failed:", uploadError);
+          throw uploadError;
+        }
+
+        console.log("✅ [Storage] Supabase Storage fallback upload successful", uploadData);
+
+        if (bucketName === "watermarks") {
+          const { data: { publicUrl } } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(cleanPath);
+          return publicUrl;
+        }
+
+        return cleanPath;
+      } catch (fallbackError: any) {
+        console.error("❌ [Storage] Both R2 and Supabase Storage uploads failed:", fallbackError);
+        throw new Error(`Upload failed: ${fallbackError.message || fallbackError}`);
+      }
     }
   },
 

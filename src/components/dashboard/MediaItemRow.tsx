@@ -40,7 +40,7 @@ export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRo
     const load = async () => {
       let signedUrl = "";
       try {
-        if (video.r2_url) {
+        if (video.r2_url && video.r2_url.includes("r2.cloudflarestorage.com")) {
           signedUrl = await storage.getSignedUrl(video.file_path, 3600);
         } else {
           const { data } = await supabase.storage.from("videos").createSignedUrl(video.file_path, 3600);
@@ -105,7 +105,7 @@ export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRo
   const handleDelete = async () => {
     if (!confirm(`Delete "${video.title}"? This cannot be undone.`)) return;
     try {
-      if (video.r2_url) {
+      if (video.r2_url && video.r2_url.includes("r2.cloudflarestorage.com")) {
         await storage.deleteFile(video.file_path);
       } else {
         await supabase.storage.from("videos").remove([video.file_path]);

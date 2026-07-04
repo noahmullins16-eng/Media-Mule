@@ -14,7 +14,7 @@ export const downloadMedia = async (filePath: string, title: string) => {
       .eq("file_path", filePath)
       .maybeSingle();
 
-    let isR2 = !!videoData?.r2_url;
+    let isR2 = !!videoData?.r2_url && videoData.r2_url.includes("r2.cloudflarestorage.com");
 
     if (!isR2) {
       const { data: fileData } = await supabase
@@ -22,7 +22,7 @@ export const downloadMedia = async (filePath: string, title: string) => {
         .select("storage_url")
         .eq("file_path", filePath)
         .maybeSingle();
-      isR2 = !!fileData?.storage_url;
+      isR2 = !!fileData?.storage_url && fileData.storage_url.includes("r2.cloudflarestorage.com");
     }
 
     if (isR2) {

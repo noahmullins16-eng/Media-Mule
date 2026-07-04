@@ -70,7 +70,7 @@ const MyVideos = () => {
       (data || []).forEach(async (v: any) => {
         let signedUrl = "";
         try {
-          if (v.r2_url) {
+          if (v.r2_url && v.r2_url.includes("r2.cloudflarestorage.com")) {
             signedUrl = await storage.getSignedUrl(v.file_path, 3600);
           } else {
             const { data: signedData } = await supabase.storage
@@ -109,7 +109,7 @@ const MyVideos = () => {
   const handleDelete = async (video: VideoItem) => {
     if (!confirm(`Delete "${video.title}"? This cannot be undone.`)) return;
     try {
-      if (video.r2_url) {
+      if (video.r2_url && video.r2_url.includes("r2.cloudflarestorage.com")) {
         await storage.deleteFile(video.file_path);
       } else {
         await supabase.storage.from("videos").remove([video.file_path]);
