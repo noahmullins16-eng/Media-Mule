@@ -1,5 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "npm:@aws-sdk/client-s3@3.535.0";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
+  ListPartsCommand,
+} from "npm:@aws-sdk/client-s3@3.535.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.535.0";
 import { createClient } from "npm:@supabase/supabase-js@2.39.8";
 
@@ -9,7 +19,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const jsonResponse = (body: any, status = 200) => {
+const jsonResponse = (body: unknown, status = 200) => {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -29,23 +39,36 @@ serve(async (req) => {
   }
 
   try {
-    // Parse Body
-    const { fileName, folder, action = "upload", contentType, expiresIn = 3600 } = await req.json();
+    // 1. Parse Request Body
+    const {
+      fileName,
+      folder,
+      action = "upload",
+      contentType,
+      expiresIn = 3600,
+      uploadId,
+      partNumber,
+      parts,
+      fileSize,
+      chunkSize,
+      key,
+    } = await req.json();
 
-    // Build Object Key (Path)
-    const key = folder ? `${folder}/${fileName}` : fileName;
+    // 2. Build or resolve Object Key
+    const resolvedKey = key || (folder ? `${folder}/${fileName}` : fileName);
 
+    // 3. Ownership / Authorization Check
     let isPublic = false;
     if (action === "download") {
-      // 1. Custom watermarks are public assets overlaid on preview player
-      if (key.startsWith("watermarks/")) {
+      // 1. Custom watermarks are public assets
+      if (resolvedKey.startsWith("watermarks/")) {
         isPublic = true;
       } else {
         // 2. Check if file is in videos table as a published video
         const { data: videoData } = await supabaseClient
           .from("videos")
           .select("id")
-          .eq("file_path", key)
+          .eq("file_path", resolvedKey)
           .eq("status", "published")
           .maybeSingle();
 
@@ -56,7 +79,7 @@ serve(async (req) => {
           const { data: fileData } = await supabaseClient
             .from("video_files")
             .select("video_id")
-            .eq("file_path", key)
+            .eq("file_path", resolvedKey)
             .maybeSingle();
 
           if (fileData) {
@@ -83,52 +106,37 @@ serve(async (req) => {
         return jsonResponse({ error: "Unauthorized: Missing Authorization header" }, 401);
       }
 
-      // Decode JWT payload directly
       const token = authHeader.replace("Bearer ", "");
-      const parts = token.split(".");
-      if (parts.length !== 3) {
-        console.error("Invalid token format");
-        return jsonResponse({ error: "Unauthorized: Invalid token format" }, 401);
+      
+      console.log("DEBUG - supabaseUrl:", supabaseUrl);
+      console.log("DEBUG - supabaseClient exists:", !!supabaseClient);
+      if (supabaseClient) {
+        console.log("DEBUG - supabaseClient keys:", Object.keys(supabaseClient));
+        console.log("DEBUG - supabaseClient auth exists:", !!(supabaseClient as any).auth);
       }
 
-      const base64Url = parts[1];
-      let payload;
-      try {
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const padLen = (4 - (base64.length % 4)) % 4;
-        const padded = base64 + "=".repeat(padLen);
-        const binaryString = atob(padded);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const rawPayload = new TextDecoder().decode(bytes);
-        payload = JSON.parse(rawPayload);
-      } catch (e) {
-        console.error("Failed to decode JWT payload:", e);
-        return jsonResponse({ error: "Unauthorized: Invalid token encoding" }, 401);
-      }
-      userId = payload.sub;
-
-      if (!userId) {
-        console.error("User ID not found in token payload");
-        return jsonResponse({ error: "Unauthorized: Invalid user payload" }, 401);
+      // SECURE AUTH: Get the user using supabase client auth API
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+      if (authError || !user) {
+        console.error("Auth verification failed:", authError);
+        return jsonResponse({ error: "Unauthorized: Invalid token" }, 401);
       }
 
+      userId = user.id;
       console.log(`🔐 Authenticated request for user: ${userId}`);
 
       // Owner verification: ensure they are modifying/accessing their own files
-      const targetFolder = folder || key;
+      const targetFolder = folder || resolvedKey;
       const isUserFolder = targetFolder.startsWith(userId) || targetFolder.startsWith(`watermarks/${userId}`);
       if (!isUserFolder) {
         console.warn(`User ${userId} tried to access unauthorized folder path: ${targetFolder}`);
         return jsonResponse({ error: "Forbidden: You do not have permission to access this path" }, 403);
       }
     } else {
-      console.log(`🔓 Public download request for key: ${key}`);
+      console.log(`🔓 Public download request for key: ${resolvedKey}`);
     }
 
+    // 4. Setup S3 client for Cloudflare R2
     const accountId = Deno.env.get("R2_ACCOUNT_ID");
     const bucketName = Deno.env.get("R2_BUCKET_NAME");
     const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
@@ -146,57 +154,242 @@ serve(async (req) => {
         accessKeyId,
         secretAccessKey,
       },
+      forcePathStyle: true,
     });
 
+    // 5. Handle Actions
     if (action === "upload") {
-      console.log(`📤 Generating presigned PUT URL for key: ${key}`);
+      // Legacy single-part PUT upload URL
+      console.log(`📤 Generating presigned PUT URL for key: ${resolvedKey}`);
       const command = new PutObjectCommand({
         Bucket: bucketName,
-        Key: key,
+        Key: resolvedKey,
         ContentType: contentType || "application/octet-stream",
       });
 
       const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn });
-      const publicUrl = `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${key}`;
+      const publicUrl = `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${resolvedKey}`;
 
       return jsonResponse({
         uploadUrl,
         publicUrl,
-        key,
+        key: resolvedKey,
       });
+
     } else if (action === "download") {
-      console.log(`📥 Generating signed GET URL for key: ${key}`);
+      // Generate signed download/GET URL
+      console.log(`📥 Generating signed GET URL for key: ${resolvedKey}`);
       const command = new GetObjectCommand({
         Bucket: bucketName,
-        Key: key,
+        Key: resolvedKey,
       });
 
       const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
 
       return jsonResponse({
         signedUrl,
-        key,
+        key: resolvedKey,
       });
+
     } else if (action === "delete") {
-      console.log(`🗑️ Deleting object for key: ${key}`);
+      // Delete object
+      console.log(`🗑️ Deleting object for key: ${resolvedKey}`);
       const command = new DeleteObjectCommand({
         Bucket: bucketName,
-        Key: key,
+        Key: resolvedKey,
       });
 
       await s3Client.send(command);
 
       return jsonResponse({
         success: true,
-        key,
+        key: resolvedKey,
       });
+
+    } else if (action === "initiate-multipart") {
+      // 1. Validate file size up to 10 GB (10 * 1024 * 1024 * 1024 bytes)
+      if (fileSize && fileSize > 10 * 1024 * 1024 * 1024) {
+        return jsonResponse({ error: "File size exceeds the 10 GB limit" }, 400);
+      }
+
+      // 2. Rate limiting check per user
+      let count = 0;
+      try {
+        const { data: countData, error: countError } = await supabaseClient
+          .from("upload_sessions")
+          .select("id")
+          .eq("user_id", userId)
+          .gt("created_at", new Date(Date.now() - 3600 * 1000).toISOString());
+        
+        if (!countError && Array.isArray(countData)) {
+          count = countData.length;
+        }
+      } catch (dbErr) {
+        console.warn("Could not query upload_sessions for rate limit check, using videos fallback", dbErr);
+        // Fallback: Check number of videos created by this user in the last hour
+        const { data: countData, error: countError } = await supabaseClient
+          .from("videos")
+          .select("id")
+          .eq("user_id", userId)
+          .gt("created_at", new Date(Date.now() - 3600 * 1000).toISOString());
+        if (!countError && Array.isArray(countData)) {
+          count = countData.length;
+        }
+      }
+
+      if (count >= 50) {
+        return jsonResponse({ error: "Rate limit exceeded. Maximum 50 uploads per hour." }, 429);
+      }
+
+      console.log(`🎬 Initiating Multipart Upload for key: ${resolvedKey}`);
+      const command = new CreateMultipartUploadCommand({
+        Bucket: bucketName,
+        Key: resolvedKey,
+        ContentType: contentType || "application/octet-stream",
+      });
+
+      const response = await s3Client.send(command);
+
+      // Track session in DB
+      try {
+        await supabaseClient
+          .from("upload_sessions")
+          .insert({
+            user_id: userId,
+            upload_id: response.UploadId,
+            file_key: resolvedKey,
+            file_name: fileName,
+            file_size: fileSize || 0,
+            chunk_size: chunkSize || 10 * 1024 * 1024,
+          });
+      } catch (dbErr) {
+        console.warn("Failed to insert upload session into database", dbErr);
+      }
+
+      return jsonResponse({
+        uploadId: response.UploadId,
+        key: resolvedKey,
+      });
+
+    } else if (action === "get-upload-part-url") {
+      if (!uploadId || !partNumber) {
+        return jsonResponse({ error: "Missing uploadId or partNumber parameters" }, 400);
+      }
+
+      console.log(`🔗 Generating Upload Part URL: Key: ${resolvedKey}, Part: ${partNumber}`);
+      const command = new UploadPartCommand({
+        Bucket: bucketName,
+        Key: resolvedKey,
+        UploadId: uploadId,
+        PartNumber: Number(partNumber),
+      });
+
+      // Part signed URLs expire quickly for safety (15 minutes)
+      const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+
+      return jsonResponse({
+        uploadUrl,
+      });
+
+    } else if (action === "complete-multipart") {
+      if (!uploadId || !parts || !Array.isArray(parts)) {
+        return jsonResponse({ error: "Missing uploadId or parts parameters" }, 400);
+      }
+
+      console.log(`🏁 Completing Multipart Upload: Key: ${resolvedKey}, Parts: ${parts.length}`);
+      const sortedParts = parts.map(p => ({
+        PartNumber: Number(p.PartNumber || p.partNumber),
+        ETag: p.ETag || p.etag,
+      })).sort((a, b) => a.PartNumber - b.PartNumber);
+
+      const command = new CompleteMultipartUploadCommand({
+        Bucket: bucketName,
+        Key: resolvedKey,
+        UploadId: uploadId,
+        MultipartUpload: {
+          Parts: sortedParts,
+        },
+      });
+
+      await s3Client.send(command);
+
+      // Mark session as completed in DB
+      try {
+        await supabaseClient
+          .from("upload_sessions")
+          .update({ completed_at: new Date().toISOString() })
+          .eq("upload_id", uploadId);
+      } catch (dbErr) {
+        console.warn("Failed to mark upload session as completed in database", dbErr);
+      }
+
+      const publicUrl = `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${resolvedKey}`;
+
+      return jsonResponse({
+        success: true,
+        publicUrl,
+        key: resolvedKey,
+      });
+
+    } else if (action === "abort-multipart") {
+      if (!uploadId) {
+        return jsonResponse({ error: "Missing uploadId parameter" }, 400);
+      }
+
+      console.log(`🛑 Aborting Multipart Upload: Key: ${resolvedKey}, UploadId: ${uploadId}`);
+      const command = new AbortMultipartUploadCommand({
+        Bucket: bucketName,
+        Key: resolvedKey,
+        UploadId: uploadId,
+      });
+
+      await s3Client.send(command);
+
+      // Mark session as aborted in DB
+      try {
+        await supabaseClient
+          .from("upload_sessions")
+          .update({ aborted_at: new Date().toISOString() })
+          .eq("upload_id", uploadId);
+      } catch (dbErr) {
+        console.warn("Failed to mark upload session as aborted in database", dbErr);
+      }
+
+      return jsonResponse({
+        success: true,
+      });
+
+    } else if (action === "list-parts") {
+      if (!uploadId) {
+        return jsonResponse({ error: "Missing uploadId parameter" }, 400);
+      }
+
+      console.log(`📋 Listing parts for Key: ${resolvedKey}, UploadId: ${uploadId}`);
+      const command = new ListPartsCommand({
+        Bucket: bucketName,
+        Key: resolvedKey,
+        UploadId: uploadId,
+      });
+
+      const response = await s3Client.send(command);
+      const uploadedParts = response.Parts?.map((p) => ({
+        PartNumber: p.PartNumber,
+        ETag: p.ETag,
+        Size: p.Size,
+      })) || [];
+
+      return jsonResponse({
+        parts: uploadedParts,
+      });
+
     } else {
       return jsonResponse({ error: `Unsupported action: ${action}` }, 400);
     }
-  } catch (error: any) {
-    console.error("❌ Edge function error:", error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("❌ Edge function error:", err);
     return jsonResponse({
-      error: `Edge Function Error: ${error.message || error}\nStack: ${error.stack || ""}`,
+      error: `Edge Function Error: ${err.message || err}\nStack: ${err.stack || ""}`,
     }, 500);
   }
 });

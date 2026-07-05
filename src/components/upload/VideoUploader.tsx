@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +7,13 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical, FolderOpen, Music, Layers, FileText } from "lucide-react";
+import { Upload, Video, Image, DollarSign, X, Check, ShieldCheck, GripVertical, FolderOpen, Music, Layers, FileText, Play, Pause, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { WatermarkUploader } from "./WatermarkUploader";
-import { storage } from "@/lib/storage";
+import { storage, MultipartUploader, type MultipartUploadState, type MultipartUploadProgressInfo } from "@/lib/storage";
 
 interface UploadFile {
   id: string;
@@ -37,13 +37,27 @@ export const VideoUploader = () => {
   const [pricingEnabled, setPricingEnabled] = useState(true);
   const [watermarksEnabled, setWatermarksEnabled] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [uploadedCount, setUploadedCount] = useState(0);
   const [tier, setTier] = useState<SubscriptionTier>("basic");
   const [customWatermarkUrl, setCustomWatermarkUrl] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
+
+  // Multipart Progress States
+  const [uploadState, setUploadState] = useState<MultipartUploadState>("idle");
+  const [uploadProgressInfo, setUploadProgressInfo] = useState<MultipartUploadProgressInfo>({
+    percent: 0,
+    loaded: 0,
+    total: 0,
+    speed: 0,
+    eta: 0,
+  });
+  const [currentUploadingName, setCurrentUploadingName] = useState("");
+
+  const currentFileIndexRef = useRef(0);
+  const uploadedUrlsRef = useRef<string[]>([]);
+  const uploaderRef = useRef<MultipartUploader | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -66,7 +80,7 @@ export const VideoUploader = () => {
     return "image";
   };
 
-  const validateFile = (f: File): boolean => {
+  const validateFile = useCallback((f: File): boolean => {
     const ext = f.name.split(".").pop()?.toLowerCase();
     const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav"].includes(ext || "");
     if (!isSupported) {
@@ -80,7 +94,7 @@ export const VideoUploader = () => {
       return false;
     }
     return true;
-  };
+  }, [tierConfig]);
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const validFiles: UploadFile[] = [];
@@ -99,7 +113,7 @@ export const VideoUploader = () => {
     if (validFiles.length > 0) {
       setFiles((prev) => [...prev, ...validFiles]);
     }
-  }, [tierConfig]);
+  }, [validateFile]);
 
   const updateFileDetail = (id: string, field: "title" | "description", value: string) => {
     setFiles((prev) => prev.map((f) => f.id === id ? { ...f, [field]: value } : f));
@@ -135,48 +149,261 @@ export const VideoUploader = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const uploadSingleFile = async (uploadFile: UploadFile, fileTitle: string, fileDescription: string, priceNum: number) => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) throw new Error("Not authenticated");
+  const runUploadLoop = async () => {
+    let authUser = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      authUser = data?.user;
+    } catch (err) {
+      console.warn("Fresh auth check failed, falling back to cached user state:", err);
+    }
 
-    const ext = uploadFile.file.name.split(".").pop();
-    const fileName = `${crypto.randomUUID()}.${ext}`;
-    const folderPath = `${authUser.id}`;
+    if (!authUser) {
+      authUser = user;
+    }
 
-    // Upload to Storage
-    const storageUrl = await storage.uploadFile(uploadFile.file, fileName, folderPath);
-    if (!storageUrl) throw new Error("Failed to upload to Storage");
+    if (!authUser) {
+      toast.error("Not authenticated");
+      return;
+    }
 
-    const { data: videoRecord, error: dbError } = await supabase
-      .from("videos")
-      .insert({
-        user_id: authUser.id,
-        title: fileTitle,
-        description: fileDescription || null,
-        price: priceNum,
-        file_path: `${folderPath}/${fileName}`,
-        file_size: uploadFile.file.size,
-        status: "published",
-        watermarks_enabled: watermarksEnabled,
-        folder_id: folderId || null,
-        r2_url: storageUrl,
-      })
-      .select("id")
-      .single();
+    setUploadState("uploading");
+    setIsUploading(true);
 
-    if (dbError || !videoRecord) throw dbError || new Error("Failed to create record");
+    try {
+      if (uploadMode === "individual") {
+        // Individual Listings Mode
+        while (currentFileIndexRef.current < files.length) {
+          const index = currentFileIndexRef.current;
+          const uploadFile = files[index];
+          setCurrentUploadingName(uploadFile.file.name);
 
-    const { error: fileError } = await supabase
-      .from("video_files")
-      .insert({
-        video_id: videoRecord.id,
-        file_path: `${folderPath}/${fileName}`,
-        file_type: uploadFile.type,
-        file_size: uploadFile.file.size,
-        sort_order: 0,
-        storage_url: storageUrl,
-      });
-    if (fileError) throw fileError;
+          const ext = uploadFile.file.name.split(".").pop();
+          const uniqueFileName = `${crypto.randomUUID()}.${ext}`;
+          const folderPath = `${authUser.id}`;
+
+          // Create and reference uploader instance
+          const uploader = storage.createMultipartUploader(
+            uploadFile.file,
+            uniqueFileName,
+            folderPath,
+            {
+              onProgress: (info) => {
+                setUploadProgressInfo(info);
+              },
+              onStateChange: (state) => {
+                setUploadState(state);
+              }
+            }
+          );
+          uploaderRef.current = uploader;
+
+          // Start uploading (waits until chunk upload loop completes)
+          let storageUrl;
+          try {
+            storageUrl = await uploader.start();
+          } catch (multipartError) {
+            console.warn("Multipart R2 upload failed, trying standard upload fallback...", multipartError);
+            storageUrl = await storage.uploadFile(
+              uploadFile.file,
+              uniqueFileName,
+              folderPath
+            );
+          }
+          uploaderRef.current = null;
+
+          const priceNum = price ? parseFloat(price) : 0;
+          
+          // Write metadata ONLY after completion
+          const { data: videoRecord, error: dbError } = await supabase
+            .from("videos")
+            .insert({
+              user_id: authUser.id,
+              title: uploadFile.title,
+              description: uploadFile.description || null,
+              price: priceNum,
+              file_path: `${folderPath}/${uniqueFileName}`,
+              file_size: uploadFile.file.size,
+              status: "published",
+              watermarks_enabled: watermarksEnabled,
+              folder_id: folderId || null,
+              r2_url: storageUrl,
+            })
+            .select("id")
+            .single();
+
+          if (dbError || !videoRecord) throw dbError || new Error("Failed to create record");
+
+          const { error: fileError } = await supabase
+            .from("video_files")
+            .insert({
+              video_id: videoRecord.id,
+              file_path: `${folderPath}/${uniqueFileName}`,
+              file_type: uploadFile.type,
+              file_size: uploadFile.file.size,
+              sort_order: 0,
+              storage_url: storageUrl,
+            });
+          if (fileError) throw fileError;
+
+          currentFileIndexRef.current += 1;
+        }
+
+        setUploadedCount(files.length);
+        setUploadComplete(true);
+        toast.success("All individual content uploaded successfully!");
+      } else {
+        // Bundle Mode
+        const primaryFile = files.find((f) => f.type === "video") || files[0];
+        
+        if (uploadedUrlsRef.current.length === 0) {
+          uploadedUrlsRef.current = new Array(files.length).fill("");
+        }
+
+        while (currentFileIndexRef.current < files.length) {
+          const index = currentFileIndexRef.current;
+          const uploadFile = files[index];
+          
+          if (uploadedUrlsRef.current[index]) {
+            currentFileIndexRef.current += 1;
+            continue;
+          }
+
+          setCurrentUploadingName(uploadFile.file.name);
+
+          const ext = uploadFile.file.name.split(".").pop();
+          const uniqueFileName = `${crypto.randomUUID()}.${ext}`;
+          const folderPath = authUser.id;
+
+          const uploader = storage.createMultipartUploader(
+            uploadFile.file,
+            uniqueFileName,
+            folderPath,
+            {
+              onProgress: (info) => {
+                setUploadProgressInfo(info);
+              },
+              onStateChange: (state) => {
+                setUploadState(state);
+              }
+            }
+          );
+          uploaderRef.current = uploader;
+
+          let storageUrl;
+          try {
+            storageUrl = await uploader.start();
+          } catch (multipartError) {
+            console.warn("Multipart R2 upload failed, trying standard upload fallback...", multipartError);
+            storageUrl = await storage.uploadFile(
+              uploadFile.file,
+              uniqueFileName,
+              folderPath
+            );
+          }
+          uploaderRef.current = null;
+
+          uploadedUrlsRef.current[index] = storageUrl;
+          currentFileIndexRef.current += 1;
+        }
+
+        // Complete Multipart flow successfully, write metadata
+        const priceNum = price ? parseFloat(price) : 0;
+        const primaryIndex = files.indexOf(primaryFile);
+        const primaryUrl = uploadedUrlsRef.current[primaryIndex];
+        const primaryFileName = primaryUrl.split("/").pop()!;
+        const primaryPath = `${authUser.id}/${primaryFileName}`;
+
+        const { data: videoRecord, error: dbError } = await supabase
+          .from("videos")
+          .insert({
+            user_id: authUser.id,
+            title,
+            description: description || null,
+            price: priceNum,
+            file_path: primaryPath,
+            file_size: primaryFile.file.size,
+            status: "published",
+            watermarks_enabled: watermarksEnabled,
+            folder_id: folderId || null,
+            r2_url: primaryUrl,
+          })
+          .select("id")
+          .single();
+
+        if (dbError || !videoRecord) throw dbError || new Error("Failed to create video record");
+
+        for (let i = 0; i < files.length; i++) {
+          const uploadFile = files[i];
+          const storageUrl = uploadedUrlsRef.current[i];
+          const fileName = storageUrl.split("/").pop()!;
+          const filePath = `${authUser.id}/${fileName}`;
+
+          const { error: fileError } = await supabase
+            .from("video_files")
+            .insert({
+              video_id: videoRecord.id,
+              file_path: filePath,
+              file_type: uploadFile.type,
+              file_size: uploadFile.file.size,
+              sort_order: i,
+              storage_url: storageUrl,
+            });
+          if (fileError) throw fileError;
+        }
+
+        setUploadedCount(1);
+        setUploadComplete(true);
+        toast.success("Content bundle uploaded successfully!");
+      }
+    } catch (err: unknown) {
+      const errorObject = err as Error;
+      if (errorObject.message === "Upload aborted" || errorObject.message === "Chunk upload aborted" || errorObject.message === "Upload paused") {
+        console.log("Upload execution loop paused.");
+      } else {
+        console.error("Upload loop error:", err);
+        setUploadState("error");
+        toast.error(errorObject.message || "Failed to upload content");
+      }
+    }
+  };
+
+  const handlePause = () => {
+    if (uploaderRef.current) {
+      uploaderRef.current.pause();
+    }
+  };
+
+  const handleResume = async () => {
+    await runUploadLoop();
+  };
+
+  const handleAbort = async () => {
+    if (!confirm("Are you sure you want to cancel the upload? This will lose all progress on the current file.")) return;
+    
+    if (uploaderRef.current) {
+      await uploaderRef.current.abort();
+    }
+
+    currentFileIndexRef.current = 0;
+    uploadedUrlsRef.current = [];
+    setIsUploading(false);
+    setUploadState("idle");
+    setUploadProgressInfo({
+      percent: 0,
+      loaded: 0,
+      total: 0,
+      speed: 0,
+      eta: 0,
+    });
+  };
+
+  const formatETA = (seconds: number) => {
+    if (seconds === 0 || !isFinite(seconds)) return "Calculating...";
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -212,100 +439,12 @@ export const VideoUploader = () => {
       return;
     }
 
-    setIsUploading(true);
-    setUploadProgress(5);
+    // Reset trackers
+    currentFileIndexRef.current = 0;
+    uploadedUrlsRef.current = [];
+    uploaderRef.current = null;
 
-    try {
-      if (uploadMode === "individual") {
-        // Each file becomes its own listing
-        for (let i = 0; i < files.length; i++) {
-          const uploadFile = files[i];
-          await uploadSingleFile(uploadFile, uploadFile.title, uploadFile.description, priceNum);
-          setUploadProgress(Math.round(((i + 1) / files.length) * 100));
-        }
-        setUploadedCount(files.length);
-      } else {
-        // Bundle mode — upload all files to Storage
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) throw new Error("Not authenticated");
-
-        const primaryFile = files.find((f) => f.type === "video") || files[0];
-        const primaryExt = primaryFile.file.name.split(".").pop();
-        const primaryFileName = `${crypto.randomUUID()}.${primaryExt}`;
-        const folderPath = authUser.id;
-
-        setUploadProgress(10);
-        const primaryR2Url = await storage.uploadFile(primaryFile.file, primaryFileName, folderPath);
-        if (!primaryR2Url) throw new Error("Failed to upload primary file to Storage");
-
-        const primaryPath = `${folderPath}/${primaryFileName}`;
-        setUploadProgress(30);
-
-        const { data: videoRecord, error: dbError } = await supabase
-          .from("videos")
-          .insert({
-            user_id: authUser.id,
-            title,
-            description: description || null,
-            price: priceNum,
-            file_path: primaryPath,
-            file_size: primaryFile.file.size,
-            status: "published",
-            watermarks_enabled: watermarksEnabled,
-            folder_id: folderId || null,
-            r2_url: primaryR2Url,
-          })
-          .select("id")
-          .single();
-
-        if (dbError || !videoRecord) throw dbError || new Error("Failed to create video record");
-
-        setUploadProgress(45);
-
-        const totalFiles = files.length;
-        for (let i = 0; i < files.length; i++) {
-          const uploadFile = files[i];
-          let filePath: string;
-          let storageUrl: string;
-
-          if (uploadFile.id === primaryFile.id) {
-            filePath = primaryPath;
-            storageUrl = primaryR2Url;
-          } else {
-            const ext = uploadFile.file.name.split(".").pop();
-            const fileName = `${crypto.randomUUID()}.${ext}`;
-            const r2Url = await storage.uploadFile(uploadFile.file, fileName, folderPath);
-            if (!r2Url) throw new Error(`Failed to upload ${uploadFile.file.name} to R2`);
-            filePath = `${folderPath}/${fileName}`;
-            storageUrl = r2Url;
-          }
-
-          const { error: fileError } = await supabase
-            .from("video_files")
-            .insert({
-              video_id: videoRecord.id,
-              file_path: filePath,
-              file_type: uploadFile.type,
-              file_size: uploadFile.file.size,
-              sort_order: i,
-              storage_url: storageUrl,
-            });
-          if (fileError) throw fileError;
-
-          setUploadProgress(45 + Math.round(((i + 1) / totalFiles) * 50));
-        }
-        setUploadedCount(1);
-      }
-
-      setUploadProgress(100);
-      setUploadComplete(true);
-      toast.success("Content uploaded successfully!");
-    } catch (err: any) {
-      console.error("Upload error:", err);
-      toast.error(err.message || "Failed to upload content");
-    } finally {
-      setIsUploading(false);
-    }
+    await runUploadLoop();
   };
 
   if (uploadComplete) {
@@ -328,7 +467,13 @@ export const VideoUploader = () => {
             setDescription("");
             setPrice("");
             setUploadComplete(false);
-            setUploadProgress(0);
+            setUploadProgressInfo({
+              percent: 0,
+              loaded: 0,
+              total: 0,
+              speed: 0,
+              eta: 0,
+            });
             setFolderId(null);
             setUploadedCount(0);
           }}>
@@ -336,6 +481,108 @@ export const VideoUploader = () => {
           </Button>
           <Button variant="heroOutline" onClick={() => navigate("/dashboard")}>
             View Your Content
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isUploading) {
+    const isPaused = uploadState === "paused";
+    const isError = uploadState === "error";
+    const isRetrying = uploadState === "retrying";
+
+    return (
+      <div className="glass-card p-8 max-w-2xl mx-auto">
+        <h2 className="font-display text-2xl font-bold mb-6 text-center">Uploading Your Content</h2>
+        
+        <div className="rounded-xl border border-border bg-background/30 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="min-w-0 flex-1 mr-4">
+              <p className="text-sm text-muted-foreground">Uploading file {currentFileIndexRef.current + 1} of {files.length}</p>
+              <h3 className="font-semibold text-lg truncate mt-1">{currentUploadingName}</h3>
+            </div>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 uppercase tracking-wider ${
+              isError 
+                ? "bg-destructive/10 text-destructive border border-destructive/20 animate-pulse" 
+                : isPaused 
+                ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20" 
+                : isRetrying 
+                ? "bg-orange-500/10 text-orange-500 border border-orange-500/20 animate-pulse" 
+                : "bg-accent/10 text-accent border border-accent/20 animate-pulse"
+            }`}>
+              {uploadState}
+            </span>
+          </div>
+
+          <div className="space-y-2 mb-4">
+            <Progress value={uploadProgressInfo.percent} className="h-3" />
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>{uploadProgressInfo.percent}% completed</span>
+              <span>{(uploadProgressInfo.loaded / (1024 * 1024)).toFixed(1)} MB / {(uploadProgressInfo.total / (1024 * 1024)).toFixed(1)} MB</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 border-t border-border pt-4 text-sm">
+            <div>
+              <p className="text-muted-foreground text-xs">Upload Speed</p>
+              <p className="font-semibold text-base mt-0.5">
+                {uploadState === "paused" ? "Paused" : `${uploadProgressInfo.speed.toFixed(2)} MB/s`}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Estimated Time Remaining</p>
+              <p className="font-semibold text-base mt-0.5">
+                {uploadState === "paused" ? "Paused" : formatETA(uploadProgressInfo.eta)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {isError && (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 mb-6 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-destructive">Upload Interrupted</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                A network error or interruption occurred. Click Retry to resume from where it failed.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {!isPaused && !isError && (
+            <Button 
+              type="button" 
+              variant="heroOutline" 
+              onClick={handlePause}
+              className="flex-1"
+            >
+              <Pause className="w-4 h-4 mr-2" />
+              Pause Upload
+            </Button>
+          )}
+
+          {(isPaused || isError) && (
+            <Button 
+              type="button" 
+              variant="premium" 
+              onClick={handleResume}
+              className="flex-1"
+            >
+              <Play className="w-4 h-4 mr-2" />
+              {isError ? "Retry Upload" : "Resume Upload"}
+            </Button>
+          )}
+
+          <Button 
+            type="button" 
+            variant="ghost" 
+            onClick={handleAbort}
+            className="text-destructive hover:bg-destructive/10 shrink-0"
+          >
+            Cancel
           </Button>
         </div>
       </div>
@@ -479,17 +726,6 @@ export const VideoUploader = () => {
               )}
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Upload Progress */}
-      {isUploading && (
-        <div className="mb-6 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Uploading {files.length} file{files.length !== 1 ? "s" : ""}...</span>
-            <span className="text-muted-foreground">{uploadProgress}%</span>
-          </div>
-          <Progress value={uploadProgress} className="h-2" />
         </div>
       )}
 

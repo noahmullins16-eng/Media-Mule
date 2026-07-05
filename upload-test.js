@@ -5,44 +5,48 @@ async function run() {
   const browser = await puppeteer.launch({ headless: "new" });
   const page = await browser.newPage();
   
+  // Set up console and error listeners early
+  page.on("console", msg => {
+    console.log("BROWSER LOG:", msg.text());
+  });
+  page.on("pageerror", err => {
+    console.error("BROWSER PAGE ERROR:", err.message);
+  });
+  page.on("requestfailed", request => {
+    console.error("BROWSER REQUEST FAILED:", request.url(), request.failure()?.errorText);
+  });
+
   try {
     console.log("🚀 Starting upload test...");
-    await page.goto("http://localhost:8080/upload");
+    await page.goto("http://127.0.0.1:8080/auth");
 
-    // Click Sign In if auth page loads
-    console.log("Navigating to auth...");
-    await page.waitForSelector("button", { timeout: 5000 }).catch(() => {});
+    console.log("On Auth page, signing in...");
+    await page.waitForSelector('input[type="email"]');
+    await page.type('input[type="email"]', "onelinker.ai@gmail.com");
+    await page.type('input[type="password"]', "Bilal@741");
     
-    // Check if on auth page
-    if (page.url().includes("/auth")) {
-      console.log("On Auth page, signing in...");
-      await page.waitForSelector('input[type="email"]');
-      await page.type('input[type="email"]', "onelinker.ai@gmail.com");
-      await page.type('input[type="password"]', "Bilal@741");
-      
-      // Click submit
-      const buttons = await page.$$("button");
-      let submitBtn = null;
-      for (const btn of buttons) {
-        const text = await page.evaluate(el => el.textContent, btn);
-        if (text.includes("Sign In")) {
-          submitBtn = btn;
-          break;
-        }
+    // Click submit
+    const buttons = await page.$$("button");
+    let submitBtn = null;
+    for (const btn of buttons) {
+      const text = await page.evaluate(el => el.textContent, btn);
+      if (text.includes("Sign In")) {
+        submitBtn = btn;
+        break;
       }
-      if (submitBtn) {
-        await submitBtn.click();
-        console.log("Clicked login button.");
-      } else {
-        await page.click('button[type="submit"]');
-      }
-
-      await page.waitForNavigation({ waitUntil: "networkidle0" });
-      console.log("Login navigate done. URL is:", page.url());
+    }
+    if (submitBtn) {
+      await submitBtn.click();
+      console.log("Clicked login button.");
+    } else {
+      await page.click('button[type="submit"]');
     }
 
+    await new Promise(r => setTimeout(r, 5000));
+    console.log("Login navigate done. URL is:", page.url());
+
     if (!page.url().includes("/upload")) {
-      await page.goto("http://localhost:8080/upload");
+      await page.goto("http://127.0.0.1:8080/upload");
       await page.waitForNetworkIdle();
     }
 
@@ -52,12 +56,12 @@ async function run() {
     await page.waitForSelector('input[type="file"]');
     const fileInput = await page.$('input[type="file"]');
     
-    const filePath = path.resolve("test_image_1783094428128.png");
+    const filePath = path.resolve("dummy_upload.mp4");
     console.log(`Uploading file: ${filePath}`);
     await fileInput.uploadFile(filePath);
     
     // Wait for UI to update showing the file
-    await page.waitForTimeout(2000);
+    await new Promise(r => setTimeout(r, 2000));
 
     // Fill in title and description
     console.log("Filling in title...");
@@ -73,7 +77,7 @@ async function run() {
 
     // Scroll down to make button visible
     await page.evaluate(() => window.scrollBy(0, 500));
-    await page.waitForTimeout(1000);
+    await new Promise(r => setTimeout(r, 1000));
 
     // Click "Upload Content" button
     console.log("Clicking Upload Content...");
@@ -96,22 +100,28 @@ async function run() {
 
     // Wait for success toast or listing redirect
     console.log("Waiting for upload success...");
-    
-    // Set up console listener to catch output
-    page.on("console", msg => {
-      console.log("BROWSER LOG:", msg.text());
-    });
 
     // Wait 15 seconds to let the upload process complete
-    await page.waitForTimeout(15000);
+    await new Promise(r => setTimeout(r, 15000));
 
     console.log("Current page URL after upload wait:", page.url());
+    
+    // Take a screenshot
+    await page.screenshot({ path: "upload_debug.png" });
+    console.log("Screenshot saved to upload_debug.png");
     console.log("SUCCESS");
   } catch (error) {
     console.error("Test failed:", error);
+    try {
+      await page.screenshot({ path: "upload_error.png" });
+      console.log("Error screenshot saved to upload_error.png");
+    } catch (e) {
+      console.error("Failed to save error screenshot:", e);
+    }
   } finally {
     await browser.close();
   }
 }
 
 run();
+
