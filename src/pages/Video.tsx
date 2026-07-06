@@ -4,6 +4,7 @@ import { Header } from "@/components/landing/Header";
 import { VideoPaywall } from "@/components/video/VideoPaywall";
 import { supabase } from "@/integrations/supabase/client";
 import { storage } from "@/lib/storage";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface BundleFile {
   id: string;
@@ -13,10 +14,12 @@ export interface BundleFile {
   sort_order: number;
   signedUrl?: string;
   storage_url?: string | null;
+  preview_path?: string | null;
 }
 
 const Video = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [video, setVideo] = useState<{
     title: string;
     description: string;
@@ -32,6 +35,7 @@ const Video = () => {
     sold: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [useCustomWatermark, setUseCustomWatermark] = useState(false);
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -42,7 +46,7 @@ const Video = () => {
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id, sold, r2_url")
+        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id, sold, r2_url, preview_path")
         .eq("id", id)
         .maybeSingle();
 
@@ -51,6 +55,27 @@ const Video = () => {
         setVideo(null);
         setLoading(false);
         return;
+      }
+
+      // Check if user is owner or has purchased
+      let isOwner = false;
+      let hasPurchased = false;
+
+      if (user) {
+        if (user.id === data.user_id) {
+          isOwner = true;
+        } else {
+          const { data: purchaseData } = await supabase
+            .from("purchases")
+            .select("id")
+            .eq("video_id", id)
+            .eq("buyer_user_id", user.id)
+            .maybeSingle();
+
+          if (purchaseData) {
+            hasPurchased = true;
+          }
+        }
       }
 
       // Fetch bundle files
@@ -65,42 +90,65 @@ const Video = () => {
 
       if (filesData && filesData.length > 0) {
         for (const f of filesData) {
+          const isAudio = f.file_type === "audio";
+          const resolvePath = (isAudio && !isOwner && !hasPurchased && f.preview_path)
+            ? f.preview_path
+            : f.file_path;
+
           let signedUrl = "";
           try {
             if (f.storage_url && f.storage_url.includes("r2.cloudflarestorage.com")) {
-              signedUrl = await storage.getSignedUrl(f.file_path, 3600);
+              signedUrl = await storage.getSignedUrl(resolvePath, 3600);
             } else {
               const { data: signedData } = await supabase.storage
                 .from("videos")
-                .createSignedUrl(f.file_path, 3600);
+                .createSignedUrl(resolvePath, 3600);
               signedUrl = signedData?.signedUrl || "";
             }
           } catch (err) {
-            console.error("Failed to generate signed URL for file:", f.file_path, err);
+            console.error("Failed to generate signed URL for file:", resolvePath, err);
           }
           const bf: BundleFile = { ...f, signedUrl };
           bundleFiles.push(bf);
-          if (!primaryVideoUrl && f.file_type === "video" && signedUrl) {
+          if (!primaryVideoUrl && (f.file_type === "video" || f.file_type === "audio") && signedUrl) {
             primaryVideoUrl = signedUrl;
           }
         }
       } else if (data.file_path) {
         // Fallback to legacy single file
+        const ext = data.file_path.split(".").pop()?.toLowerCase() || "";
+        const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
+        const fileType = isAudio ? "audio" : "video";
+
+        const resolvePath = (isAudio && !isOwner && !hasPurchased && data.preview_path)
+          ? data.preview_path
+          : data.file_path;
+
         let signedUrl = "";
         try {
           if (data.r2_url && data.r2_url.includes("r2.cloudflarestorage.com")) {
-            signedUrl = await storage.getSignedUrl(data.file_path, 3600);
+            signedUrl = await storage.getSignedUrl(resolvePath, 3600);
           } else {
             const { data: signedData } = await supabase.storage
               .from("videos")
-              .createSignedUrl(data.file_path, 3600);
+              .createSignedUrl(resolvePath, 3600);
             signedUrl = signedData?.signedUrl || "";
           }
         } catch (err) {
-          console.error("Failed to generate signed URL for legacy path:", data.file_path, err);
+          console.error("Failed to generate signed URL for legacy path:", resolvePath, err);
         }
         if (signedUrl) {
           primaryVideoUrl = signedUrl;
+          bundleFiles.push({
+            id: "primary",
+            file_path: data.file_path,
+            file_type: fileType,
+            file_size: null,
+            sort_order: 0,
+            signedUrl: signedUrl,
+            storage_url: data.r2_url,
+            preview_path: data.preview_path,
+          });
         }
       }
 
@@ -142,13 +190,23 @@ const Video = () => {
         userId: data.user_id,
         customWatermarkUrl,
         bundleFiles,
-        sold: data.sold ?? false,
+        sold: (hasPurchased || data.sold) ?? false,
       });
+      if (customWatermarkUrl) setUseCustomWatermark(true);
       setLoading(false);
     };
 
     fetchVideo();
-  }, [id]);
+  }, [id, user]);
+
+  const handleToggleWatermark = async (newValue: boolean) => {
+    if (!id) return;
+    const { error } = await supabase
+      .from("videos")
+      .update({ watermarks_enabled: newValue })
+      .eq("id", id);
+    if (!error && video) setVideo({ ...video, watermarksEnabled: newValue });
+  };
 
   if (loading) {
     return (
@@ -182,8 +240,10 @@ const Video = () => {
         <VideoPaywall
           {...video}
           videoId={id}
-          isOwner={false}
-          useCustomWatermark={!!video.customWatermarkUrl}
+          isOwner={!!(user && video && user.id === video.userId)}
+          useCustomWatermark={useCustomWatermark}
+          onToggleCustomWatermark={setUseCustomWatermark}
+          onToggleWatermark={handleToggleWatermark}
           sold={video.sold}
         />
       </main>

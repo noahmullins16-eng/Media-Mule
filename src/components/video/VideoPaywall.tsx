@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus, Video, Image, Package, Loader2 } from "lucide-react";
+import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus, Video, Image, Package, Loader2, Music } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
 import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
 import { toast } from "sonner";
@@ -147,7 +147,124 @@ export const VideoPaywall = ({
           onContextMenu={(e) => e.preventDefault()}
           style={{ userSelect: "none", WebkitUserSelect: "none" }}
         >
-          {activeUrl && activeType === "video" ? (
+          {activeUrl && activeType === "audio" ? (
+            <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 p-8">
+              <audio
+                ref={videoRef as any}
+                src={activeUrl}
+                muted={isMuted}
+                onEnded={() => setIsPlaying(false)}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onContextMenu={(e) => e.preventDefault()}
+                controlsList="nodownload"
+                style={{ display: "none" }}
+              />
+
+              <div className="glass-card p-6 flex flex-col items-center gap-4 max-w-xs w-full shadow-2xl relative overflow-hidden group">
+                <div className="w-32 h-32 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center relative overflow-hidden">
+                  {isPlaying ? (
+                    <div className="flex items-end gap-1.5 h-16">
+                      {[...Array(10)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-1.5 bg-accent rounded-full origin-bottom"
+                          style={{
+                            height: "100%",
+                            animation: `equalizer ${0.5 + Math.random() * 0.7}s ease-in-out infinite alternate`,
+                            animationDelay: `${i * 0.06}s`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <Music className="w-12 h-12 text-accent/50 animate-pulse" />
+                  )}
+                </div>
+
+                <div className="text-center w-full">
+                  <h3 className="font-semibold text-base truncate text-white">{title}</h3>
+                  <p className="text-xs text-muted-foreground truncate">by {creator}</p>
+                </div>
+              </div>
+
+              {watermarksEnabled && (
+                <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold select-none pointer-events-none">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Preview Watermarked
+                </div>
+              )}
+
+              {!isPlaying && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center bg-black/10"
+                  style={{ zIndex: 26, pointerEvents: "none" }}
+                >
+                  <button
+                    onClick={togglePlay}
+                    style={{ pointerEvents: "auto" }}
+                    className="w-16 h-16 rounded-full bg-accent/90 flex items-center justify-center shadow-lg shadow-accent/50 hover:scale-110 transition-transform"
+                  >
+                    <Play className="w-8 h-8 text-accent-foreground ml-1" fill="currentColor" />
+                  </button>
+                </div>
+              )}
+
+              <div
+                className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black/80 to-transparent flex flex-col gap-1.5"
+                style={{ zIndex: 27 }}
+              >
+                <input
+                  type="range"
+                  min={0}
+                  max={videoDuration || 0}
+                  step={0.1}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full h-1 appearance-none bg-white/20 rounded-full cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                  style={{
+                    background: videoDuration
+                      ? `linear-gradient(to right, hsl(var(--accent)) ${(currentTime / videoDuration) * 100}%, rgba(255,255,255,0.2) ${(currentTime / videoDuration) * 100}%)`
+                      : undefined,
+                  }}
+                />
+                <div className="flex items-center gap-2">
+                  <button onClick={togglePlay} className="text-white hover:text-accent transition-colors">
+                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" fill="currentColor" />}
+                  </button>
+                  <span className="text-xs text-white/70 font-mono min-w-[70px]">
+                    {formatTime(currentTime)} / {formatTime(videoDuration)}
+                  </span>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button onClick={toggleMute} className="text-white hover:text-accent transition-colors">
+                      {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      className="w-20 h-1 appearance-none bg-white/20 rounded-full cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-2.5 [&::-moz-range-thumb]:h-2.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, white ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%)`,
+                      }}
+                    />
+                    <ShieldCheck className="w-3.5 h-3.5 text-accent/70 ml-2" />
+                    <span className="text-xs text-white/70 font-medium font-sans">DRM</span>
+                  </div>
+                </div>
+              </div>
+
+              <style>{`
+                @keyframes equalizer {
+                  0% { transform: scaleY(0.15); }
+                  100% { transform: scaleY(1); }
+                }
+              `}</style>
+            </div>
+          ) : activeUrl && activeType === "video" ? (
             <>
               <video
                 ref={videoRef}
@@ -292,10 +409,19 @@ export const VideoPaywall = ({
                 >
                   {bf.file_type === "image" && bf.signedUrl ? (
                     <img src={bf.signedUrl} alt="" className="w-full h-full object-cover" />
+                  ) : bf.file_type === "video" && bf.signedUrl ? (
+                    <div className="relative w-full h-full">
+                      <video src={bf.signedUrl} className="w-full h-full object-cover" preload="metadata" muted playsInline />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <Video className="w-4 h-4 text-white opacity-80" />
+                      </div>
+                    </div>
                   ) : (
                     <div className="w-full h-full bg-accent/10 flex items-center justify-center">
                       {bf.file_type === "video" ? (
                         <Video className="w-5 h-5 text-accent" />
+                      ) : bf.file_type === "audio" ? (
+                        <Music className="w-5 h-5 text-accent" />
                       ) : (
                         <Image className="w-5 h-5 text-accent" />
                       )}
@@ -325,7 +451,22 @@ export const VideoPaywall = ({
                 <span className="text-xs text-muted-foreground">{duration}</span>
                 {bundleFiles.length > 1 && (
                   <span className="text-xs text-muted-foreground">
-                    {bundleFiles.filter(f => f.file_type === "video").length} videos · {bundleFiles.filter(f => f.file_type === "image").length} images
+                    {[
+                      bundleFiles.filter((f) => f.file_type === "video").length > 0 &&
+                        `${bundleFiles.filter((f) => f.file_type === "video").length} video${
+                          bundleFiles.filter((f) => f.file_type === "video").length > 1 ? "s" : ""
+                        }`,
+                      bundleFiles.filter((f) => f.file_type === "audio").length > 0 &&
+                        `${bundleFiles.filter((f) => f.file_type === "audio").length} audio track${
+                          bundleFiles.filter((f) => f.file_type === "audio").length > 1 ? "s" : ""
+                        }`,
+                      bundleFiles.filter((f) => f.file_type === "image").length > 0 &&
+                        `${bundleFiles.filter((f) => f.file_type === "image").length} image${
+                          bundleFiles.filter((f) => f.file_type === "image").length > 1 ? "s" : ""
+                        }`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 )}
               </div>

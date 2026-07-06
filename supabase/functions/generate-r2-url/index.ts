@@ -60,25 +60,29 @@ serve(async (req) => {
     // 3. Ownership / Authorization Check
     let isPublic = false;
     if (action === "download") {
-      // 1. Custom watermarks are public assets
-      if (resolvedKey.startsWith("watermarks/")) {
+      // 1. Previews and watermarks are public assets
+      if (resolvedKey.startsWith("previews/") || resolvedKey.startsWith("watermarks/")) {
         isPublic = true;
       } else {
-        // 2. Check if file is in videos table as a published video
+        // 2. Check if file is in videos table as a published video (and is not audio)
         const { data: videoData } = await supabaseClient
           .from("videos")
-          .select("id")
+          .select("id, status")
           .eq("file_path", resolvedKey)
           .eq("status", "published")
           .maybeSingle();
 
         if (videoData) {
-          isPublic = true;
+          const ext = resolvedKey.split(".").pop()?.toLowerCase() || "";
+          const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
+          if (!isAudio) {
+            isPublic = true;
+          }
         } else {
-          // 3. Check if file is in video_files associated with a published video
+          // 3. Check if file is in video_files associated with a published video (and is not audio)
           const { data: fileData } = await supabaseClient
             .from("video_files")
-            .select("video_id")
+            .select("video_id, file_type")
             .eq("file_path", resolvedKey)
             .maybeSingle();
 
@@ -90,7 +94,7 @@ serve(async (req) => {
               .eq("status", "published")
               .maybeSingle();
 
-            if (parentVideo) {
+            if (parentVideo && (fileData.file_type === "video" || fileData.file_type === "image")) {
               isPublic = true;
             }
           }
@@ -108,13 +112,6 @@ serve(async (req) => {
 
       const token = authHeader.replace("Bearer ", "");
       
-      console.log("DEBUG - supabaseUrl:", supabaseUrl);
-      console.log("DEBUG - supabaseClient exists:", !!supabaseClient);
-      if (supabaseClient) {
-        console.log("DEBUG - supabaseClient keys:", Object.keys(supabaseClient));
-        console.log("DEBUG - supabaseClient auth exists:", !!(supabaseClient as any).auth);
-      }
-
       // SECURE AUTH: Get the user using supabase client auth API
       const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
       if (authError || !user) {
@@ -125,12 +122,87 @@ serve(async (req) => {
       userId = user.id;
       console.log(`🔐 Authenticated request for user: ${userId}`);
 
-      // Owner verification: ensure they are modifying/accessing their own files
-      const targetFolder = folder || resolvedKey;
-      const isUserFolder = targetFolder.startsWith(userId) || targetFolder.startsWith(`watermarks/${userId}`);
-      if (!isUserFolder) {
-        console.warn(`User ${userId} tried to access unauthorized folder path: ${targetFolder}`);
-        return jsonResponse({ error: "Forbidden: You do not have permission to access this path" }, 403);
+      if (action === "download") {
+        // Enforce owner / purchase check on download actions
+        let isAuthorized = false;
+
+        // Find the video ID and owner ID for the requested key
+        let videoId = null;
+        let ownerId = null;
+
+        // Try matching video table first
+        const { data: videoData } = await supabaseClient
+          .from("videos")
+          .select("id, user_id")
+          .eq("file_path", resolvedKey)
+          .maybeSingle();
+
+        if (videoData) {
+          videoId = videoData.id;
+          ownerId = videoData.user_id;
+        } else {
+          // Try matching video_files table
+          const { data: fileData } = await supabaseClient
+            .from("video_files")
+            .select("video_id")
+            .eq("file_path", resolvedKey)
+            .maybeSingle();
+
+          if (fileData) {
+            const { data: parentVideo } = await supabaseClient
+              .from("videos")
+              .select("id, user_id")
+              .eq("id", fileData.video_id)
+              .maybeSingle();
+
+            if (parentVideo) {
+              videoId = parentVideo.id;
+              ownerId = parentVideo.user_id;
+            }
+          }
+        }
+
+        // If we found a video record associated with this key:
+        if (videoId && ownerId) {
+          // Check if they are the owner
+          if (userId === ownerId) {
+            isAuthorized = true;
+            console.log(`✅ User ${userId} is the owner of video ${videoId}`);
+          } else {
+            // Check if they purchased the video
+            const { data: purchaseData } = await supabaseClient
+              .from("purchases")
+              .select("id")
+              .eq("video_id", videoId)
+              .eq("buyer_user_id", userId)
+              .maybeSingle();
+
+            if (purchaseData) {
+              isAuthorized = true;
+              console.log(`✅ User ${userId} purchased video ${videoId}`);
+            }
+          }
+        } else {
+          // If the key is not in videos or video_files, enforce standard folder check:
+          const targetFolder = folder || resolvedKey;
+          const isUserFolder = targetFolder.startsWith(userId) || targetFolder.startsWith(`watermarks/${userId}`);
+          if (isUserFolder) {
+            isAuthorized = true;
+          }
+        }
+
+        if (!isAuthorized) {
+          console.warn(`User ${userId} tried to access unauthorized path: ${resolvedKey}`);
+          return jsonResponse({ error: "Forbidden: You do not have permission to access this path" }, 403);
+        }
+      } else {
+        // For non-download actions (e.g. upload / write): owner verification
+        const targetFolder = folder || resolvedKey;
+        const isUserFolder = targetFolder.startsWith(userId) || targetFolder.startsWith(`watermarks/${userId}`) || targetFolder.startsWith(`previews/${userId}`);
+        if (!isUserFolder) {
+          console.warn(`User ${userId} tried to access unauthorized folder path: ${targetFolder}`);
+          return jsonResponse({ error: "Forbidden: You do not have permission to access this path" }, 403);
+        }
       }
     } else {
       console.log(`🔓 Public download request for key: ${resolvedKey}`);

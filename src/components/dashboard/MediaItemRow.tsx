@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Video, Trash2, ExternalLink, Link2, ShieldCheck, FolderInput, Download } from "lucide-react";
+import { Video, Music, Trash2, ExternalLink, Link2, ShieldCheck, FolderInput, Download } from "lucide-react";
 import { downloadMedia } from "@/lib/download-media";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,42 +33,29 @@ interface MediaItemRowProps {
 
 export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRowProps) => {
   const navigate = useNavigate();
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      let signedUrl = "";
+      let url = "";
       try {
         if (video.r2_url && video.r2_url.includes("r2.cloudflarestorage.com")) {
-          signedUrl = await storage.getSignedUrl(video.file_path, 3600);
+          url = await storage.getSignedUrl(video.file_path, 3600);
         } else {
           const { data } = await supabase.storage.from("videos").createSignedUrl(video.file_path, 3600);
-          signedUrl = data?.signedUrl || "";
+          url = data?.signedUrl || "";
         }
       } catch (err) {
         console.error("Failed to generate signed URL for MediaItemRow preview:", err);
       }
-      if (!signedUrl || cancelled) return;
-      const vid = document.createElement("video");
-      vid.crossOrigin = "anonymous";
-      vid.muted = true;
-      vid.preload = "metadata";
-      vid.src = signedUrl;
-      vid.addEventListener("loadeddata", () => { vid.currentTime = 1; });
-      vid.addEventListener("seeked", () => {
-        const c = document.createElement("canvas");
-        c.width = 160; c.height = 90;
-        const ctx = c.getContext("2d");
-        if (ctx && !cancelled) {
-          ctx.drawImage(vid, 0, 0, c.width, c.height);
-          setThumbnail(c.toDataURL("image/jpeg", 0.7));
-        }
-      });
+      if (!cancelled) {
+        setSignedUrl(url);
+      }
     };
     load();
     return () => { cancelled = true; };
-  }, [video.file_path]);
+  }, [video.file_path, video.r2_url]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`https://mediamuleco.com/video/${video.id}`);
@@ -122,6 +109,43 @@ export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRo
     }
   };
 
+  const ext = video.file_path.split(".").pop()?.toLowerCase() || "";
+  const isImage = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext);
+  const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
+
+  const renderThumbnail = () => {
+    if (!signedUrl) {
+      return (
+        <div className="w-24 h-14 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+          <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-accent"></div>
+        </div>
+      );
+    }
+
+    if (isImage) {
+      return (
+        <img src={signedUrl} alt={video.title} className="w-24 h-14 rounded-lg object-cover shrink-0" />
+      );
+    }
+
+    if (isAudio) {
+      return (
+        <div className="w-24 h-14 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+          <Music className="w-6 h-6 text-accent" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative w-24 h-14 rounded-lg overflow-hidden shrink-0">
+        <video src={signedUrl} className="w-full h-full object-cover" preload="metadata" muted playsInline />
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+          <Video className="w-4 h-4 text-white opacity-85" />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       draggable
@@ -131,13 +155,7 @@ export const MediaItemRow = ({ video, folders, onUpdate, onDelete }: MediaItemRo
       }}
       className="glass-card p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 cursor-grab active:cursor-grabbing"
     >
-      {thumbnail ? (
-        <img src={thumbnail} alt={video.title} className="w-24 h-14 rounded-lg object-cover shrink-0" />
-      ) : (
-        <div className="w-24 h-14 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-          <Video className="w-6 h-6 text-accent" />
-        </div>
-      )}
+      {renderThumbnail()}
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold truncate text-sm">{video.title}</h3>
         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">

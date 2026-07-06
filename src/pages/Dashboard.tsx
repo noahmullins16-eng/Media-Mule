@@ -94,7 +94,7 @@ const Dashboard = () => {
       setLoadingVideos(true);
       const { data } = await supabase
         .from("videos")
-        .select("id, title, description, price, file_path, file_size, status, created_at, watermarks_enabled, folder_id")
+        .select("id, title, description, price, file_path, file_size, status, created_at, watermarks_enabled, folder_id, r2_url")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       setVideos((data as VideoItem[]) || []);

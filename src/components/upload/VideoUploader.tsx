@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { TIER_CONFIG, type SubscriptionTier } from "@/lib/subscription-tiers";
 import { WatermarkUploader } from "./WatermarkUploader";
 import { storage, MultipartUploader, type MultipartUploadState, type MultipartUploadProgressInfo } from "@/lib/storage";
+import { generateAudioPreview } from "@/lib/audio-preview";
 
 interface UploadFile {
   id: string;
@@ -54,9 +55,24 @@ export const VideoUploader = () => {
     eta: 0,
   });
   const [currentUploadingName, setCurrentUploadingName] = useState("");
+  const [maxPercent, setMaxPercent] = useState(0);
+  const [maxLoadedBytes, setMaxLoadedBytes] = useState(0);
+
+  useEffect(() => {
+    if (uploadProgressInfo.percent > maxPercent) {
+      setMaxPercent(uploadProgressInfo.percent);
+    }
+  }, [uploadProgressInfo.percent, maxPercent]);
+
+  useEffect(() => {
+    if (uploadProgressInfo.loaded > maxLoadedBytes) {
+      setMaxLoadedBytes(uploadProgressInfo.loaded);
+    }
+  }, [uploadProgressInfo.loaded, maxLoadedBytes]);
 
   const currentFileIndexRef = useRef(0);
   const uploadedUrlsRef = useRef<string[]>([]);
+  const uploadedPreviewPathsRef = useRef<string[]>([]);
   const uploaderRef = useRef<MultipartUploader | null>(null);
 
   useEffect(() => {
@@ -202,7 +218,17 @@ export const VideoUploader = () => {
           let storageUrl;
           try {
             storageUrl = await uploader.start();
-          } catch (multipartError) {
+          } catch (multipartError: any) {
+            const isPausedOrAborted =
+              multipartError?.message === "Upload paused" ||
+              multipartError?.message === "Upload aborted" ||
+              multipartError?.message === "Upload paused or stopped" ||
+              multipartError?.message === "Chunk upload aborted";
+
+            if (isPausedOrAborted) {
+              throw multipartError;
+            }
+
             console.warn("Multipart R2 upload failed, trying standard upload fallback...", multipartError);
             storageUrl = await storage.uploadFile(
               uploadFile.file,
@@ -211,6 +237,43 @@ export const VideoUploader = () => {
             );
           }
           uploaderRef.current = null;
+
+          let previewPath = null;
+          if (uploadFile.type === "audio") {
+            try {
+              console.log("🎵 Generating audio preview...");
+              const previewBlob = await generateAudioPreview(uploadFile.file);
+              const previewFile = new File([previewBlob], `${uniqueFileName}-preview.wav`, { type: "audio/wav" });
+              const previewKey = `${crypto.randomUUID()}-preview.wav`;
+              
+              console.log("🎵 Uploading audio preview to R2...");
+              const previewUploader = storage.createMultipartUploader(
+                previewFile,
+                previewKey,
+                `previews/${folderPath}`,
+                {
+                  onProgress: () => {},
+                  onStateChange: () => {}
+                }
+              );
+              
+              try {
+                await previewUploader.start();
+              } catch (e) {
+                console.warn("R2 multipart upload for preview failed, falling back to standard upload...", e);
+                await storage.uploadFile(
+                  previewFile,
+                  previewKey,
+                  `previews/${folderPath}`
+                );
+              }
+              
+              previewPath = `previews/${folderPath}/${previewKey}`;
+              console.log("🎵 Audio preview uploaded successfully:", previewPath);
+            } catch (err) {
+              console.error("❌ Failed to generate or upload audio preview:", err);
+            }
+          }
 
           const priceNum = price ? parseFloat(price) : 0;
           
@@ -228,6 +291,7 @@ export const VideoUploader = () => {
               watermarks_enabled: watermarksEnabled,
               folder_id: folderId || null,
               r2_url: storageUrl,
+              preview_path: previewPath,
             })
             .select("id")
             .single();
@@ -243,6 +307,7 @@ export const VideoUploader = () => {
               file_size: uploadFile.file.size,
               sort_order: 0,
               storage_url: storageUrl,
+              preview_path: previewPath,
             });
           if (fileError) throw fileError;
 
@@ -258,6 +323,10 @@ export const VideoUploader = () => {
         
         if (uploadedUrlsRef.current.length === 0) {
           uploadedUrlsRef.current = new Array(files.length).fill("");
+        }
+
+        if (uploadedPreviewPathsRef.current.length === 0) {
+          uploadedPreviewPathsRef.current = new Array(files.length).fill("");
         }
 
         while (currentFileIndexRef.current < files.length) {
@@ -293,7 +362,17 @@ export const VideoUploader = () => {
           let storageUrl;
           try {
             storageUrl = await uploader.start();
-          } catch (multipartError) {
+          } catch (multipartError: any) {
+            const isPausedOrAborted =
+              multipartError?.message === "Upload paused" ||
+              multipartError?.message === "Upload aborted" ||
+              multipartError?.message === "Upload paused or stopped" ||
+              multipartError?.message === "Chunk upload aborted";
+
+            if (isPausedOrAborted) {
+              throw multipartError;
+            }
+
             console.warn("Multipart R2 upload failed, trying standard upload fallback...", multipartError);
             storageUrl = await storage.uploadFile(
               uploadFile.file,
@@ -303,7 +382,43 @@ export const VideoUploader = () => {
           }
           uploaderRef.current = null;
 
+          let previewPath = "";
+          if (uploadFile.type === "audio") {
+            try {
+              console.log("🎵 Generating audio preview for bundle file:", uploadFile.file.name);
+              const previewBlob = await generateAudioPreview(uploadFile.file);
+              const previewFile = new File([previewBlob], `${uniqueFileName}-preview.wav`, { type: "audio/wav" });
+              const previewKey = `${crypto.randomUUID()}-preview.wav`;
+              
+              const previewUploader = storage.createMultipartUploader(
+                previewFile,
+                previewKey,
+                `previews/${folderPath}`,
+                {
+                  onProgress: () => {},
+                  onStateChange: () => {}
+                }
+              );
+              
+              try {
+                await previewUploader.start();
+              } catch (e) {
+                console.warn("R2 multipart upload for preview failed, falling back to standard upload...", e);
+                await storage.uploadFile(
+                  previewFile,
+                  previewKey,
+                  `previews/${folderPath}`
+                );
+              }
+              previewPath = `previews/${folderPath}/${previewKey}`;
+              console.log("🎵 Audio preview uploaded for bundle:", previewPath);
+            } catch (err) {
+              console.error("Failed to generate or upload audio preview in bundle mode:", err);
+            }
+          }
+ 
           uploadedUrlsRef.current[index] = storageUrl;
+          uploadedPreviewPathsRef.current[index] = previewPath;
           currentFileIndexRef.current += 1;
         }
 
@@ -327,6 +442,7 @@ export const VideoUploader = () => {
             watermarks_enabled: watermarksEnabled,
             folder_id: folderId || null,
             r2_url: primaryUrl,
+            preview_path: uploadedPreviewPathsRef.current[primaryIndex] || null,
           })
           .select("id")
           .single();
@@ -348,6 +464,7 @@ export const VideoUploader = () => {
               file_size: uploadFile.file.size,
               sort_order: i,
               storage_url: storageUrl,
+              preview_path: uploadedPreviewPathsRef.current[i] || null,
             });
           if (fileError) throw fileError;
         }
@@ -358,7 +475,13 @@ export const VideoUploader = () => {
       }
     } catch (err: unknown) {
       const errorObject = err as Error;
-      if (errorObject.message === "Upload aborted" || errorObject.message === "Chunk upload aborted" || errorObject.message === "Upload paused") {
+      const isPauseOrAbort =
+        errorObject.message === "Upload aborted" ||
+        errorObject.message === "Chunk upload aborted" ||
+        errorObject.message === "Upload paused" ||
+        errorObject.message === "Upload paused or stopped";
+
+      if (isPauseOrAbort) {
         console.log("Upload execution loop paused.");
       } else {
         console.error("Upload loop error:", err);
@@ -389,6 +512,8 @@ export const VideoUploader = () => {
     uploadedUrlsRef.current = [];
     setIsUploading(false);
     setUploadState("idle");
+    setMaxPercent(0);
+    setMaxLoadedBytes(0);
     setUploadProgressInfo({
       percent: 0,
       loaded: 0,
@@ -443,6 +568,8 @@ export const VideoUploader = () => {
     currentFileIndexRef.current = 0;
     uploadedUrlsRef.current = [];
     uploaderRef.current = null;
+    setMaxPercent(0);
+    setMaxLoadedBytes(0);
 
     await runUploadLoop();
   };
@@ -467,6 +594,8 @@ export const VideoUploader = () => {
             setDescription("");
             setPrice("");
             setUploadComplete(false);
+            setMaxPercent(0);
+            setMaxLoadedBytes(0);
             setUploadProgressInfo({
               percent: 0,
               loaded: 0,
@@ -516,10 +645,10 @@ export const VideoUploader = () => {
           </div>
 
           <div className="space-y-2 mb-4">
-            <Progress value={uploadProgressInfo.percent} className="h-3" />
+            <Progress value={maxPercent} className="h-3" />
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>{uploadProgressInfo.percent}% completed</span>
-              <span>{(uploadProgressInfo.loaded / (1024 * 1024)).toFixed(1)} MB / {(uploadProgressInfo.total / (1024 * 1024)).toFixed(1)} MB</span>
+              <span>{maxPercent}% completed</span>
+              <span>{(maxLoadedBytes / (1024 * 1024)).toFixed(1)} MB / {(uploadProgressInfo.total / (1024 * 1024)).toFixed(1)} MB</span>
             </div>
           </div>
 
@@ -527,13 +656,21 @@ export const VideoUploader = () => {
             <div>
               <p className="text-muted-foreground text-xs">Upload Speed</p>
               <p className="font-semibold text-base mt-0.5">
-                {uploadState === "paused" ? "Paused" : `${uploadProgressInfo.speed.toFixed(2)} MB/s`}
+                {uploadState === "paused" 
+                  ? "Paused" 
+                  : uploadProgressInfo.speed > 0 
+                  ? `${uploadProgressInfo.speed.toFixed(2)} MB/s` 
+                  : "Resuming..."}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Estimated Time Remaining</p>
               <p className="font-semibold text-base mt-0.5">
-                {uploadState === "paused" ? "Paused" : formatETA(uploadProgressInfo.eta)}
+                {uploadState === "paused" 
+                  ? "Paused" 
+                  : uploadProgressInfo.eta > 0 
+                  ? formatETA(uploadProgressInfo.eta) 
+                  : "Calculating..."}
               </p>
             </div>
           </div>
