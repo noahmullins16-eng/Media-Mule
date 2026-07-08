@@ -1,3 +1,5 @@
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface MultipartUploadProgressInfo {
@@ -575,6 +577,9 @@ export const storage = {
   },
 
   async getSignedUrl(filePath: string, expiresIn: number = 3600): Promise<string> {
+    if (!filePath) return "";
+    if (filePath.startsWith("http://") || filePath.startsWith("https://")) return filePath;
+
     try {
       console.log("🔑 [Storage] Requesting signed GET URL", { filePath, expiresIn });
 
@@ -596,16 +601,51 @@ export const storage = {
         }
       }
 
-      if (error || !parsedData?.signedUrl) {
-        console.error("❌ [Storage] Signed GET URL generation failed", error, parsedData);
-        throw new Error(parsedData?.error || error?.message || "Failed to generate signed GET URL");
+      if (!error && parsedData?.signedUrl) {
+        console.log("✅ [Storage] Successfully generated signed GET URL via edge function");
+        return parsedData.signedUrl;
       }
 
-      console.log("✅ [Storage] Successfully generated signed GET URL");
-      return parsedData.signedUrl;
-    } catch (error) {
-      console.error("❌ [Storage] Signed URL process error", error);
-      throw error;
+      throw new Error(parsedData?.error || error?.message || "Failed to generate signed GET URL");
+    } catch (edgeError) {
+      try {
+        const accountId = import.meta.env.VITE_R2_ACCOUNT_ID;
+        const bucketName = import.meta.env.VITE_R2_BUCKET_NAME;
+        const accessKeyId = import.meta.env.VITE_R2_ACCESS_KEY_ID;
+        const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
+
+        if (!accountId || !bucketName || !accessKeyId || !secretAccessKey) {
+          throw new Error("R2 credentials missing in client environment");
+        }
+
+        const s3Client = new S3Client({
+          region: "auto",
+          endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId,
+            secretAccessKey,
+          },
+          forcePathStyle: true,
+        });
+
+        const command = new GetObjectCommand({
+          Bucket: bucketName,
+          Key: filePath,
+        });
+
+        const signedUrl = await getS3SignedUrl(s3Client, command, { expiresIn });
+        console.log("✅ [Storage] Generated signed GET URL directly from R2 client credentials");
+        return signedUrl;
+      } catch (clientError) {
+        const publicUrl = this.getPublicUrl(filePath);
+        console.warn("⚠️ [Storage] Signed URL generation failed; falling back to R2 public URL", {
+          filePath,
+          publicUrl,
+          edgeError,
+          clientError,
+        });
+        return publicUrl;
+      }
     }
   },
 
