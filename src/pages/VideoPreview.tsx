@@ -53,7 +53,8 @@ const VideoPreview = () => {
 
       if (filesData && filesData.length > 0) {
         for (const f of filesData) {
-          const resolvePath = (!isOwner && f.preview_path) ? f.preview_path : f.file_path;
+          const shouldUsePreview = !isOwner && Boolean(f.preview_path);
+          const resolvePath = shouldUsePreview ? f.preview_path : f.file_path;
           let signedUrl = "";
           try {
             if (resolvePath) {
@@ -73,7 +74,8 @@ const VideoPreview = () => {
           }
         }
       } else if (data.file_path) {
-        const resolvePath = (!isOwner && data.preview_path) ? data.preview_path : data.file_path;
+        const shouldUsePreview = !isOwner && Boolean(data.preview_path);
+        const resolvePath = shouldUsePreview ? data.preview_path : data.file_path;
         let signedUrl = "";
         try {
           if (resolvePath) {

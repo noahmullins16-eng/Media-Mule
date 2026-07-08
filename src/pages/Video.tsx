@@ -90,9 +90,8 @@ const Video = () => {
 
       if (filesData && filesData.length > 0) {
         for (const f of filesData) {
-          const resolvePath = (!isOwner && !hasPurchased && f.preview_path)
-            ? f.preview_path
-            : f.file_path;
+          const shouldUsePreview = !isOwner && !hasPurchased && Boolean(f.preview_path);
+          const resolvePath = shouldUsePreview ? f.preview_path : f.file_path;
 
           let signedUrl = "";
           try {
@@ -118,9 +117,8 @@ const Video = () => {
         const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
         const fileType = isAudio ? "audio" : "video";
 
-        const resolvePath = (!isOwner && !hasPurchased && data.preview_path)
-          ? data.preview_path
-          : data.file_path;
+        const shouldUsePreview = !isOwner && !hasPurchased && Boolean(data.preview_path);
+        const resolvePath = shouldUsePreview ? data.preview_path : data.file_path;
 
         let signedUrl = "";
         try {
