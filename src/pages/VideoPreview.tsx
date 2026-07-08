@@ -28,21 +28,18 @@ const VideoPreview = () => {
   const [useCustomWatermark, setUseCustomWatermark] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth");
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
     const fetchVideo = async () => {
-      if (!id || !user) { setLoading(false); return; }
+      if (!id) { setLoading(false); return; }
 
       const { data, error } = await supabase
         .from("videos")
-        .select("title, description, price, thumbnail_url, status, file_path, watermarks_enabled, user_id, r2_url")
+        .select("title, description, price, thumbnail_url, status, file_path, preview_path, watermarks_enabled, user_id, r2_url")
         .eq("id", id)
         .maybeSingle();
 
       if (error || !data) { setVideo(null); setLoading(false); return; }
-      if (data.user_id !== user.id) { navigate(`/video/${id}`); return; }
+
+      const isOwner = Boolean(user && user.id === data.user_id);
 
       // Fetch bundle files
       const { data: filesData } = await supabase
@@ -56,18 +53,19 @@ const VideoPreview = () => {
 
       if (filesData && filesData.length > 0) {
         for (const f of filesData) {
+          const resolvePath = (!isOwner && f.preview_path) ? f.preview_path : f.file_path;
           let signedUrl = "";
           try {
             if (f.storage_url && f.storage_url.includes("r2.cloudflarestorage.com")) {
-              signedUrl = await storage.getSignedUrl(f.file_path, 3600);
+              signedUrl = await storage.getSignedUrl(resolvePath, 3600);
             } else {
               const { data: signedData } = await supabase.storage
                 .from("videos")
-                .createSignedUrl(f.file_path, 3600);
+                .createSignedUrl(resolvePath, 3600);
               signedUrl = signedData?.signedUrl || "";
             }
           } catch (err) {
-            console.error("Failed to generate signed URL for file:", f.file_path, err);
+            console.error("Failed to generate signed URL for file:", resolvePath, err);
           }
           const bf: BundleFile = { ...f, signedUrl };
           bundleFiles.push(bf);
@@ -76,18 +74,19 @@ const VideoPreview = () => {
           }
         }
       } else if (data.file_path) {
+        const resolvePath = (!isOwner && data.preview_path) ? data.preview_path : data.file_path;
         let signedUrl = "";
         try {
           if (data.r2_url && data.r2_url.includes("r2.cloudflarestorage.com")) {
-            signedUrl = await storage.getSignedUrl(data.file_path, 3600);
+            signedUrl = await storage.getSignedUrl(resolvePath, 3600);
           } else {
             const { data: signedData } = await supabase.storage
               .from("videos")
-              .createSignedUrl(data.file_path, 3600);
+              .createSignedUrl(resolvePath, 3600);
             signedUrl = signedData?.signedUrl || "";
           }
         } catch (err) {
-          console.error("Failed to generate signed URL for legacy path:", data.file_path, err);
+          console.error("Failed to generate signed URL for legacy path:", resolvePath, err);
         }
         if (signedUrl) primaryVideoUrl = signedUrl;
       }
@@ -176,7 +175,7 @@ const VideoPreview = () => {
         <VideoPaywall
           {...video}
           videoId={id}
-          isOwner={true}
+          isOwner={Boolean(user && user.id === video.userId)}
           onToggleWatermark={handleToggleWatermark}
           useCustomWatermark={useCustomWatermark}
           onToggleCustomWatermark={setUseCustomWatermark}

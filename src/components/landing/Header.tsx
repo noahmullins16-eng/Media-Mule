@@ -1,14 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Moon, Sun, Settings } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import logoFull from "@/assets/logo-full.png";
 
 export const Header = ({ minimal = false }: { minimal?: boolean }) => {
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -29,7 +41,18 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
               <Link to="/how-it-works" className="absolute left-1/2 -translate-x-1/2 text-muted-foreground hover:text-foreground transition-colors">
                 How It Works
               </Link>
-              <div />
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Toggle theme"
+                  onClick={toggleTheme}
+                  className="rounded-full"
+                >
+                  {mounted && theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              </div>
             </>
           ) : (
             <>
@@ -52,6 +75,16 @@ export const Header = ({ minimal = false }: { minimal?: boolean }) => {
 
               {/* CTA */}
               <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Toggle theme"
+                  onClick={toggleTheme}
+                  className="rounded-full"
+                >
+                  {mounted && theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
                 {user ? (
                   <>
                     <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors" title="Account Settings">
