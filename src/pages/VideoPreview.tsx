@@ -56,21 +56,15 @@ const VideoPreview = () => {
           const resolvePath = (!isOwner && f.preview_path) ? f.preview_path : f.file_path;
           let signedUrl = "";
           try {
-            if (f.storage_url && f.storage_url.includes("r2.cloudflarestorage.com")) {
+            if (resolvePath) {
               signedUrl = await storage.getSignedUrl(resolvePath, 3600);
-            } else {
-              const { data: signedData } = await supabase.storage
-                .from("videos")
-                .createSignedUrl(resolvePath, 3600);
-              signedUrl = signedData?.signedUrl || "";
             }
           } catch (err) {
             console.error("Failed to generate signed URL for file:", resolvePath, err);
           }
 
-          if (!signedUrl && resolvePath) {
-            const bucketUrl = `${import.meta.env.VITE_R2_ENDPOINT || "https://02a3ca93ae9d8ca0004395c1cdd95953.r2.cloudflarestorage.com"}/${resolvePath}`;
-            signedUrl = bucketUrl;
+          if (!signedUrl && f.storage_url) {
+            signedUrl = f.storage_url;
           }
           const bf: BundleFile = { ...f, signedUrl };
           bundleFiles.push(bf);
@@ -82,21 +76,15 @@ const VideoPreview = () => {
         const resolvePath = (!isOwner && data.preview_path) ? data.preview_path : data.file_path;
         let signedUrl = "";
         try {
-          if (data.r2_url && data.r2_url.includes("r2.cloudflarestorage.com")) {
+          if (resolvePath) {
             signedUrl = await storage.getSignedUrl(resolvePath, 3600);
-          } else {
-            const { data: signedData } = await supabase.storage
-              .from("videos")
-              .createSignedUrl(resolvePath, 3600);
-            signedUrl = signedData?.signedUrl || "";
           }
         } catch (err) {
           console.error("Failed to generate signed URL for legacy path:", resolvePath, err);
         }
 
-        if (!signedUrl && resolvePath) {
-          const bucketUrl = `${import.meta.env.VITE_R2_ENDPOINT || "https://02a3ca93ae9d8ca0004395c1cdd95953.r2.cloudflarestorage.com"}/${resolvePath}`;
-          signedUrl = bucketUrl;
+        if (!signedUrl && data.r2_url) {
+          signedUrl = data.r2_url;
         }
         if (signedUrl) primaryVideoUrl = signedUrl;
       }
