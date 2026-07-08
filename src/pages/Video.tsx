@@ -92,20 +92,17 @@ const Video = () => {
         for (const f of filesData) {
           const shouldUsePreview = !isOwner && !hasPurchased && Boolean(f.preview_path);
           const resolvePath = shouldUsePreview ? f.preview_path : f.file_path;
-          const hasPublicUrl = Boolean(f.storage_url || f.r2_url);
           const isImageAsset = f.file_type === "image";
 
           let signedUrl = "";
-          if (isImageAsset && hasPublicUrl) {
-            signedUrl = f.storage_url || f.r2_url || "";
-          } else {
-            try {
-              if (resolvePath) {
-                signedUrl = await storage.getSignedUrl(resolvePath, 3600);
-              }
-            } catch (err) {
-              console.error("Failed to generate signed URL for file:", resolvePath, err);
+          try {
+            if (isImageAsset && resolvePath) {
+              signedUrl = storage.getPublicUrl(resolvePath);
+            } else if (resolvePath) {
+              signedUrl = await storage.getSignedUrl(resolvePath, 3600);
             }
+          } catch (err) {
+            console.error("Failed to resolve URL for file:", resolvePath, err);
           }
 
           if (!signedUrl && f.storage_url) {
@@ -128,16 +125,14 @@ const Video = () => {
         const resolvePath = shouldUsePreview ? data.preview_path : data.file_path;
 
         let signedUrl = "";
-        if (isImageAsset && data.r2_url) {
-          signedUrl = data.r2_url;
-        } else {
-          try {
-            if (resolvePath) {
-              signedUrl = await storage.getSignedUrl(resolvePath, 3600);
-            }
-          } catch (err) {
-            console.error("Failed to generate signed URL for legacy path:", resolvePath, err);
+        try {
+          if (isImageAsset && resolvePath) {
+            signedUrl = storage.getPublicUrl(resolvePath);
+          } else if (resolvePath) {
+            signedUrl = await storage.getSignedUrl(resolvePath, 3600);
           }
+        } catch (err) {
+          console.error("Failed to resolve URL for legacy path:", resolvePath, err);
         }
 
         if (!signedUrl && data.r2_url) {
