@@ -67,6 +67,11 @@ const VideoPreview = () => {
           } catch (err) {
             console.error("Failed to generate signed URL for file:", resolvePath, err);
           }
+
+          if (!signedUrl && resolvePath) {
+            const bucketUrl = `${import.meta.env.VITE_R2_ENDPOINT || "https://02a3ca93ae9d8ca0004395c1cdd95953.r2.cloudflarestorage.com"}/${resolvePath}`;
+            signedUrl = bucketUrl;
+          }
           const bf: BundleFile = { ...f, signedUrl };
           bundleFiles.push(bf);
           if (!primaryVideoUrl && f.file_type === "video" && signedUrl) {
@@ -87,6 +92,11 @@ const VideoPreview = () => {
           }
         } catch (err) {
           console.error("Failed to generate signed URL for legacy path:", resolvePath, err);
+        }
+
+        if (!signedUrl && resolvePath) {
+          const bucketUrl = `${import.meta.env.VITE_R2_ENDPOINT || "https://02a3ca93ae9d8ca0004395c1cdd95953.r2.cloudflarestorage.com"}/${resolvePath}`;
+          signedUrl = bucketUrl;
         }
         if (signedUrl) primaryVideoUrl = signedUrl;
       }
