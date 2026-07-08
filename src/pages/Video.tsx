@@ -92,14 +92,20 @@ const Video = () => {
         for (const f of filesData) {
           const shouldUsePreview = !isOwner && !hasPurchased && Boolean(f.preview_path);
           const resolvePath = shouldUsePreview ? f.preview_path : f.file_path;
+          const hasPublicUrl = Boolean(f.storage_url || f.r2_url);
+          const isImageAsset = f.file_type === "image";
 
           let signedUrl = "";
-          try {
-            if (resolvePath) {
-              signedUrl = await storage.getSignedUrl(resolvePath, 3600);
+          if (isImageAsset && hasPublicUrl) {
+            signedUrl = f.storage_url || f.r2_url || "";
+          } else {
+            try {
+              if (resolvePath) {
+                signedUrl = await storage.getSignedUrl(resolvePath, 3600);
+              }
+            } catch (err) {
+              console.error("Failed to generate signed URL for file:", resolvePath, err);
             }
-          } catch (err) {
-            console.error("Failed to generate signed URL for file:", resolvePath, err);
           }
 
           if (!signedUrl && f.storage_url) {
@@ -116,17 +122,22 @@ const Video = () => {
         const ext = data.file_path.split(".").pop()?.toLowerCase() || "";
         const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
         const fileType = isAudio ? "audio" : "video";
+        const isImageAsset = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(ext);
 
         const shouldUsePreview = !isOwner && !hasPurchased && Boolean(data.preview_path);
         const resolvePath = shouldUsePreview ? data.preview_path : data.file_path;
 
         let signedUrl = "";
-        try {
-          if (resolvePath) {
-            signedUrl = await storage.getSignedUrl(resolvePath, 3600);
+        if (isImageAsset && data.r2_url) {
+          signedUrl = data.r2_url;
+        } else {
+          try {
+            if (resolvePath) {
+              signedUrl = await storage.getSignedUrl(resolvePath, 3600);
+            }
+          } catch (err) {
+            console.error("Failed to generate signed URL for legacy path:", resolvePath, err);
           }
-        } catch (err) {
-          console.error("Failed to generate signed URL for legacy path:", resolvePath, err);
         }
 
         if (!signedUrl && data.r2_url) {
