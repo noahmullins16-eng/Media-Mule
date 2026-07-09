@@ -597,16 +597,57 @@ export const storage = {
       }
 
       if (error || !parsedData?.signedUrl) {
-        console.error("❌ [Storage] Signed GET URL generation failed", error, parsedData);
-        throw new Error(parsedData?.error || error?.message || "Failed to generate signed GET URL");
+        console.warn("⚠️ [Storage] Signed GET URL generation failed, trying client-side signing fallback...", error, parsedData);
+        return await this.clientSideSignUrl(filePath, expiresIn);
       }
 
-      console.log("✅ [Storage] Successfully generated signed GET URL");
+      console.log("✅ [Storage] Successfully generated signed GET URL via Edge Function");
       return parsedData.signedUrl;
     } catch (error) {
-      console.error("❌ [Storage] Signed URL process error", error);
-      throw error;
+      console.warn("⚠️ [Storage] Edge Function signing threw error, trying client-side signing fallback...", error);
+      try {
+        return await this.clientSideSignUrl(filePath, expiresIn);
+      } catch (fallbackError) {
+        console.error("❌ [Storage] Client-side fallback signing also failed:", fallbackError);
+        throw error;
+      }
     }
+  },
+
+  async clientSideSignUrl(filePath: string, expiresIn: number = 3600): Promise<string> {
+    console.log("🔑 [Storage] Generating signed GET URL on client-side...");
+    
+    // Dynamic import to prevent bundler bloating
+    const { S3Client, GetObjectCommand } = await import("@aws-sdk/client-s3");
+    const { getSignedUrl: getR2SignedUrl } = await import("@aws-sdk/s3-request-presigner");
+
+    const accountId = import.meta.env.VITE_R2_ACCOUNT_ID;
+    const bucketName = import.meta.env.VITE_R2_BUCKET_NAME;
+    const accessKeyId = import.meta.env.VITE_R2_ACCESS_KEY_ID;
+    const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
+
+    if (!accountId || !bucketName || !accessKeyId || !secretAccessKey) {
+      console.error("❌ [Storage] Client-side R2 configurations are missing. Cannot sign URL.");
+      throw new Error("Missing client-side R2 configurations for fallback signing");
+    }
+
+    const s3Client = new S3Client({
+      region: "auto",
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
+
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: filePath,
+    });
+
+    const signedUrl = await getR2SignedUrl(s3Client, command, { expiresIn });
+    console.log("✅ [Storage] Successfully generated signed GET URL via client-side fallback");
+    return signedUrl;
   },
 
   async deleteFile(filePath: string): Promise<void> {
