@@ -90,23 +90,23 @@ const Video = () => {
 
       if (filesData && filesData.length > 0) {
         for (const f of filesData) {
-          const isAudio = f.file_type === "audio";
-          const resolvePath = (isAudio && !isOwner && !hasPurchased && f.preview_path)
-            ? f.preview_path
-            : f.file_path;
+          const shouldUsePreview = !isOwner && !hasPurchased && Boolean(f.preview_path);
+          const resolvePath = shouldUsePreview ? f.preview_path : f.file_path;
+          const isImageAsset = f.file_type === "image";
 
           let signedUrl = "";
           try {
-            if (f.storage_url && f.storage_url.includes("r2.cloudflarestorage.com")) {
+            if (isImageAsset && resolvePath) {
+              signedUrl = storage.getPublicUrl(resolvePath);
+            } else if (resolvePath) {
               signedUrl = await storage.getSignedUrl(resolvePath, 3600);
-            } else {
-              const { data: signedData } = await supabase.storage
-                .from("videos")
-                .createSignedUrl(resolvePath, 3600);
-              signedUrl = signedData?.signedUrl || "";
             }
           } catch (err) {
-            console.error("Failed to generate signed URL for file:", resolvePath, err);
+            console.error("Failed to resolve URL for file:", resolvePath, err);
+          }
+
+          if (!signedUrl && f.storage_url) {
+            signedUrl = f.storage_url;
           }
           const bf: BundleFile = { ...f, signedUrl };
           bundleFiles.push(bf);
@@ -119,23 +119,24 @@ const Video = () => {
         const ext = data.file_path.split(".").pop()?.toLowerCase() || "";
         const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
         const fileType = isAudio ? "audio" : "video";
+        const isImageAsset = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(ext);
 
-        const resolvePath = (isAudio && !isOwner && !hasPurchased && data.preview_path)
-          ? data.preview_path
-          : data.file_path;
+        const shouldUsePreview = !isOwner && !hasPurchased && Boolean(data.preview_path);
+        const resolvePath = shouldUsePreview ? data.preview_path : data.file_path;
 
         let signedUrl = "";
         try {
-          if (data.r2_url && data.r2_url.includes("r2.cloudflarestorage.com")) {
+          if (isImageAsset && resolvePath) {
+            signedUrl = storage.getPublicUrl(resolvePath);
+          } else if (resolvePath) {
             signedUrl = await storage.getSignedUrl(resolvePath, 3600);
-          } else {
-            const { data: signedData } = await supabase.storage
-              .from("videos")
-              .createSignedUrl(resolvePath, 3600);
-            signedUrl = signedData?.signedUrl || "";
           }
         } catch (err) {
-          console.error("Failed to generate signed URL for legacy path:", resolvePath, err);
+          console.error("Failed to resolve URL for legacy path:", resolvePath, err);
+        }
+
+        if (!signedUrl && data.r2_url) {
+          signedUrl = data.r2_url;
         }
         if (signedUrl) {
           primaryVideoUrl = signedUrl;

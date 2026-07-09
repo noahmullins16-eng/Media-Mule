@@ -29,6 +29,23 @@ const jsonResponse = (body: unknown, status = 200) => {
   });
 };
 
+const normalizeObjectKey = (value: string) => {
+  if (!value) return "";
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    try {
+      return new URL(value).pathname.replace(/^\/+/, "");
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
+
+const isPublicAssetKey = (value: string) => {
+  const normalized = normalizeObjectKey(value);
+  return normalized.startsWith("previews/") || normalized.startsWith("watermarks/");
+};
+
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -55,36 +72,65 @@ serve(async (req) => {
     } = await req.json();
 
     // 2. Build or resolve Object Key
-    const resolvedKey = key || (folder ? `${folder}/${fileName}` : fileName);
+    const resolvedKey = normalizeObjectKey(key || (folder ? `${folder}/${fileName}` : fileName));
 
     // 3. Ownership / Authorization Check
     let isPublic = false;
     if (action === "download") {
       // 1. Previews and watermarks are public assets
-      if (resolvedKey.startsWith("previews/") || resolvedKey.startsWith("watermarks/")) {
+      if (isPublicAssetKey(resolvedKey)) {
         isPublic = true;
       } else {
         // 2. Check if file is in videos table as a published video (and is not audio)
         const { data: videoData } = await supabaseClient
           .from("videos")
-          .select("id, status")
+          .select("id, status, preview_path")
           .eq("file_path", resolvedKey)
           .eq("status", "published")
           .maybeSingle();
 
-        if (videoData) {
+        if (!videoData) {
+          const { data: previewVideoData } = await supabaseClient
+            .from("videos")
+            .select("id, status, preview_path")
+            .eq("preview_path", resolvedKey)
+            .eq("status", "published")
+            .maybeSingle();
+
+          if (previewVideoData) {
+            const ext = resolvedKey.split(".").pop()?.toLowerCase() || "";
+            const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
+            if (!isAudio) {
+              isPublic = true;
+            }
+          }
+        } else {
           const ext = resolvedKey.split(".").pop()?.toLowerCase() || "";
           const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
           if (!isAudio) {
             isPublic = true;
           }
-        } else {
+        }
+
+        if (!isPublic) {
           // 3. Check if file is in video_files associated with a published video (and is not audio)
           const { data: fileData } = await supabaseClient
             .from("video_files")
             .select("video_id, file_type")
             .eq("file_path", resolvedKey)
             .maybeSingle();
+
+          if (!fileData) {
+            const { data: previewFileData } = await supabaseClient
+              .from("video_files")
+              .select("video_id, file_type")
+              .eq("preview_path", resolvedKey)
+              .maybeSingle();
+
+            if (previewFileData) {
+              fileData = previewFileData;
+            }
+          }
 
           if (fileData) {
             const { data: parentVideo } = await supabaseClient
