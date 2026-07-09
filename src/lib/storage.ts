@@ -601,7 +601,6 @@ export const storage = {
         }
       }
 
-<<<<<<< HEAD
       if (error || !parsedData?.signedUrl) {
         console.warn("⚠️ [Storage] Signed GET URL generation failed, trying client-side signing fallback...", error, parsedData);
         return await this.clientSideSignUrl(filePath, expiresIn);
@@ -616,47 +615,6 @@ export const storage = {
       } catch (fallbackError) {
         console.error("❌ [Storage] Client-side fallback signing also failed:", fallbackError);
         throw error;
-=======
-      if (!error && parsedData?.signedUrl) {
-        console.log("✅ [Storage] Successfully generated signed GET URL via edge function");
-        return parsedData.signedUrl;
-      }
-
-      throw new Error(parsedData?.error || error?.message || "Failed to generate signed GET URL");
-    } catch (edgeError) {
-      try {
-        const accountId = import.meta.env.VITE_R2_ACCOUNT_ID;
-        const bucketName = import.meta.env.VITE_R2_BUCKET_NAME;
-        const accessKeyId = import.meta.env.VITE_R2_ACCESS_KEY_ID;
-        const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
-
-        if (!accountId || !bucketName || !accessKeyId || !secretAccessKey) {
-          throw new Error("R2 credentials missing in client environment");
-        }
-
-        const s3Client = new S3Client({
-          region: "auto",
-          endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-          credentials: {
-            accessKeyId,
-            secretAccessKey,
-          },
-          forcePathStyle: true,
-        });
-
-        const command = new GetObjectCommand({
-          Bucket: bucketName,
-          Key: filePath,
-        });
-
-        const signedUrl = await getS3SignedUrl(s3Client, command, { expiresIn });
-        console.log("✅ [Storage] Generated signed GET URL directly from R2 client credentials");
-        return signedUrl;
-      } catch (clientError) {
-        const publicUrl = this.getPublicUrl(filePath);
-        console.warn("⚠️ [Storage] Signed URL generation failed; falling back to R2 public URL", { filePath, publicUrl, edgeError, clientError });
-        return publicUrl;
->>>>>>> d77761fd102b2f319dbc0b23e182c39585ff9824
       }
     }
   },

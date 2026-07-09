@@ -55,12 +55,9 @@ const VideoPreview = () => {
         for (const f of filesData) {
           const shouldUsePreview = !isOwner && Boolean(f.preview_path);
           const resolvePath = shouldUsePreview ? f.preview_path : f.file_path;
-          const isImageAsset = f.file_type === "image";
           let signedUrl = "";
           try {
-            if (isImageAsset && resolvePath) {
-              signedUrl = storage.getPublicUrl(resolvePath);
-            } else if (resolvePath) {
+            if (resolvePath) {
               signedUrl = await storage.getSignedUrl(resolvePath, 3600);
             }
           } catch (err) {
@@ -72,20 +69,16 @@ const VideoPreview = () => {
           }
           const bf: BundleFile = { ...f, signedUrl };
           bundleFiles.push(bf);
-          if (!primaryVideoUrl && f.file_type === "video" && signedUrl) {
+          if (!primaryVideoUrl && signedUrl) {
             primaryVideoUrl = signedUrl;
           }
         }
       } else if (data.file_path) {
-        const ext = data.file_path.split(".").pop()?.toLowerCase() || "";
-        const isImageAsset = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(ext);
         const shouldUsePreview = !isOwner && Boolean(data.preview_path);
         const resolvePath = shouldUsePreview ? data.preview_path : data.file_path;
         let signedUrl = "";
         try {
-          if (isImageAsset && resolvePath) {
-            signedUrl = storage.getPublicUrl(resolvePath);
-          } else if (resolvePath) {
+          if (resolvePath) {
             signedUrl = await storage.getSignedUrl(resolvePath, 3600);
           }
         } catch (err) {
@@ -101,10 +94,10 @@ const VideoPreview = () => {
       let customWatermarkUrl: string | null = null;
       let creatorUsername = "Media Mule Creator";
       const { data: profileData } = await supabase
-        .from("creator_profiles")
+        .from("creator_profiles_public" as any)
         .select("custom_watermark_path, username")
         .eq("user_id", data.user_id)
-        .maybeSingle();
+        .maybeSingle() as { data: { username: string | null; custom_watermark_path: string | null } | null };
 
       if (profileData?.username) creatorUsername = profileData.username;
       if (profileData?.custom_watermark_path) {

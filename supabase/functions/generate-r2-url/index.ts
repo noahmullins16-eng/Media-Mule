@@ -114,11 +114,14 @@ serve(async (req) => {
 
         if (!isPublic) {
           // 3. Check if file is in video_files associated with a published video (and is not audio)
-          const { data: fileData } = await supabaseClient
+          let fileData = null;
+          const { data: dbFileData } = await supabaseClient
             .from("video_files")
             .select("video_id, file_type")
             .eq("file_path", resolvedKey)
             .maybeSingle();
+
+          fileData = dbFileData;
 
           if (!fileData) {
             const { data: previewFileData } = await supabaseClient
@@ -140,7 +143,7 @@ serve(async (req) => {
               .eq("status", "published")
               .maybeSingle();
 
-            if (parentVideo && (fileData.file_type === "video" || fileData.file_type === "image")) {
+            if (parentVideo && (fileData.file_type === "video" || fileData.file_type === "image" || fileData.file_type === "pdf")) {
               isPublic = true;
             }
           }

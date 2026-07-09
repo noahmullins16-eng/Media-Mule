@@ -19,7 +19,7 @@ import { generateAudioPreview } from "@/lib/audio-preview";
 interface UploadFile {
   id: string;
   file: File;
-  type: "video" | "image" | "audio";
+  type: "video" | "image" | "audio" | "pdf";
   title: string;
   description: string;
 }
@@ -90,17 +90,18 @@ export const VideoUploader = () => {
 
   const tierConfig = TIER_CONFIG[tier];
 
-  const getFileType = (file: File): "video" | "image" | "audio" => {
+  const getFileType = (file: File): "video" | "image" | "audio" | "pdf" => {
     if (file.type.startsWith("video/")) return "video";
     if (file.type.startsWith("audio/") || ["mp3", "wav"].includes(file.name.split(".").pop()?.toLowerCase() || "")) return "audio";
+    if (file.type === "application/pdf" || file.name.split(".").pop()?.toLowerCase() === "pdf") return "pdf";
     return "image";
   };
 
   const validateFile = useCallback((f: File): boolean => {
     const ext = f.name.split(".").pop()?.toLowerCase();
-    const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || ["mp3", "wav"].includes(ext || "");
+    const isSupported = f.type.startsWith("video/") || f.type.startsWith("image/") || f.type.startsWith("audio/") || f.type === "application/pdf" || ["mp3", "wav", "pdf"].includes(ext || "");
     if (!isSupported) {
-      toast.error(`"${f.name}" is not a supported file type (video, image, or audio)`);
+      toast.error(`"${f.name}" is not a supported file type (video, image, audio, or PDF)`);
       return false;
     }
     if (f.size > tierConfig.maxFileSize) {
@@ -753,7 +754,7 @@ export const VideoUploader = () => {
           <label>
             <input
               type="file"
-              accept="video/*,image/*,audio/*,.mp3,.wav"
+              accept="video/*,image/*,audio/*,.mp3,.wav,application/pdf,.pdf"
               onChange={handleFileChange}
               className="hidden"
               multiple
@@ -763,7 +764,7 @@ export const VideoUploader = () => {
             </Button>
           </label>
           <p className="text-xs text-muted-foreground mt-3">
-            Videos, images & audio · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
+            Videos, images, audio & PDFs · Max per file: {tierConfig.maxFileSizeLabel} ({tierConfig.label} plan)
             {tier !== "enterprise" && (
               <> · <Link to="/pricing" className="text-accent hover:underline">Upgrade for more</Link></>
             )}
@@ -819,6 +820,8 @@ export const VideoUploader = () => {
                     <Video className="w-5 h-5 text-accent" />
                   ) : uploadFile.type === "audio" ? (
                     <Music className="w-5 h-5 text-accent" />
+                  ) : uploadFile.type === "pdf" ? (
+                    <FileText className="w-5 h-5 text-accent" />
                   ) : (
                     <Image className="w-5 h-5 text-accent" />
                   )}

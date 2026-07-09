@@ -6,7 +6,7 @@
  * - Overlays a dual-frequency chime watermark (C5 and E5) decaying over 1.2s every 7 seconds.
  * - Encodes the rendered AudioBuffer as a 16-bit WAV PCM file.
  */
-export async function generateAudioPreview(file: File, durationSeconds: number = 30): Promise<Blob> {
+export async function generateAudioPreview(file: File, durationSeconds: number = Infinity): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   
   // Use standard AudioContext to decode

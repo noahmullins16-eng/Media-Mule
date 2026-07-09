@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus, Video, Image, Package, Loader2, Music } from "lucide-react";
+import { Play, Pause, CreditCard, Volume2, VolumeX, ShieldCheck, Link2, ImagePlus, Video, Image, Package, Loader2, Music, FileText } from "lucide-react";
 import { MovingWatermark } from "./MovingWatermark";
 import { TiledWatermark, ForensicWatermark, useScreenRecordingGuard } from "./VideoProtection";
 import { toast } from "sonner";
@@ -377,6 +377,14 @@ export const VideoPaywall = ({
                 </>
               )}
             </div>
+          ) : activeUrl && activeType === "pdf" ? (
+            <div className="relative w-full h-full bg-white">
+              <iframe
+                src={`${activeUrl}#toolbar=0`}
+                className="w-full h-full border-none"
+                title={title}
+              />
+            </div>
           ) : (
             <>
               <img src={thumbnail} alt={title} className="w-full h-full object-cover" />
@@ -422,6 +430,8 @@ export const VideoPaywall = ({
                         <Video className="w-5 h-5 text-accent" />
                       ) : bf.file_type === "audio" ? (
                         <Music className="w-5 h-5 text-accent" />
+                      ) : bf.file_type === "pdf" ? (
+                        <FileText className="w-5 h-5 text-accent" />
                       ) : (
                         <Image className="w-5 h-5 text-accent" />
                       )}
@@ -463,6 +473,10 @@ export const VideoPaywall = ({
                       bundleFiles.filter((f) => f.file_type === "image").length > 0 &&
                         `${bundleFiles.filter((f) => f.file_type === "image").length} image${
                           bundleFiles.filter((f) => f.file_type === "image").length > 1 ? "s" : ""
+                        }`,
+                      bundleFiles.filter((f) => f.file_type === "pdf").length > 0 &&
+                        `${bundleFiles.filter((f) => f.file_type === "pdf").length} PDF${
+                          bundleFiles.filter((f) => f.file_type === "pdf").length > 1 ? "s" : ""
                         }`,
                     ]
                       .filter(Boolean)
