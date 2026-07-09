@@ -98,22 +98,14 @@ serve(async (req) => {
             .maybeSingle();
 
           if (previewVideoData) {
-            const ext = resolvedKey.split(".").pop()?.toLowerCase() || "";
-            const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
-            if (!isAudio) {
-              isPublic = true;
-            }
-          }
-        } else {
-          const ext = resolvedKey.split(".").pop()?.toLowerCase() || "";
-          const isAudio = ["mp3", "wav", "ogg", "aac", "m4a"].includes(ext);
-          if (!isAudio) {
             isPublic = true;
           }
+        } else {
+          isPublic = true;
         }
 
         if (!isPublic) {
-          // 3. Check if file is in video_files associated with a published video (and is not audio)
+          // 3. Check if file is in video_files associated with a published video
           let fileData = null;
           const { data: dbFileData } = await supabaseClient
             .from("video_files")
@@ -143,7 +135,7 @@ serve(async (req) => {
               .eq("status", "published")
               .maybeSingle();
 
-            if (parentVideo && (fileData.file_type === "video" || fileData.file_type === "image" || fileData.file_type === "pdf")) {
+            if (parentVideo && (fileData.file_type === "video" || fileData.file_type === "image" || fileData.file_type === "pdf" || fileData.file_type === "audio")) {
               isPublic = true;
             }
           }
